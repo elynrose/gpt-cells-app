@@ -430,7 +430,27 @@
             if (user) {
                 currentUser = user;
                 updateUserInterface(user);
-                loadProjects();
+                
+                // Wait for firestoreService to be available
+                if (typeof firestoreService === 'undefined') {
+                    console.log('⏳ Waiting for firestoreService to load...');
+                    setTimeout(() => {
+                        if (typeof firestoreService !== 'undefined') {
+                            console.log('✅ firestoreService loaded, loading projects...');
+                            loadProjects();
+                        } else {
+                            console.error('❌ firestoreService still not available after timeout');
+                            document.getElementById('projectsContainer').innerHTML = `
+                                <div class="loading">
+                                    <p>Firebase services not loaded. Please refresh the page.</p>
+                                    <button onclick="location.reload()" class="btn btn-primary" style="margin-top: 10px;">Refresh</button>
+                                </div>
+                            `;
+                        }
+                    }, 1000);
+                } else {
+                    loadProjects();
+                }
             } else {
                 window.location.href = '/login.html';
             }
@@ -454,6 +474,12 @@
                 const projectsContainer = document.getElementById('projectsContainer');
                 
                 console.log('🔄 Loading projects from Firestore...');
+                
+                // Check if firestoreService is available
+                if (typeof firestoreService === 'undefined') {
+                    console.error('❌ firestoreService not available');
+                    throw new Error('Firebase services not loaded');
+                }
                 
                 // Fetch projects from Firestore
                 const result = await firestoreService.getProjects(currentUser.uid);
