@@ -2823,6 +2823,22 @@ async function initializeApp() {
     console.log('firestoreService available:', typeof firestoreService !== 'undefined');
     console.log('db available:', typeof db !== 'undefined');
     console.log('auth available:', typeof auth !== 'undefined');
+    
+    // Wait for firestoreService to be available
+    if (typeof firestoreService === 'undefined') {
+      console.log('⏳ Waiting for firestoreService to load...');
+      // Wait a bit and try again
+      setTimeout(() => {
+        if (typeof firestoreService !== 'undefined') {
+          console.log('✅ firestoreService loaded, continuing...');
+          initializeApp();
+        } else {
+          console.error('❌ firestoreService still not available after timeout');
+          showError('Firebase services not loaded. Please refresh the page.');
+        }
+      }, 1000);
+      return;
+    }
 
     // Update user interface
     updateUserInterface();
