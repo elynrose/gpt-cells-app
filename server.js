@@ -769,6 +769,7 @@ const server = http.createServer(async (req, res) => {
       console.log('🔧 Firebase API Key from env:', process.env.FIREBASE_API_KEY ? 'SET' : 'NOT SET');
       console.log('🔧 Using API Key:', firebaseApiKey.substring(0, 10) + '...');
       console.log('🔧 Full API Key for debugging:', firebaseApiKey);
+      console.log('🔧 Railway deployment test - latest code');
       
       const config = `// Firebase configuration and initialization
 // Using compat version for browser compatibility
