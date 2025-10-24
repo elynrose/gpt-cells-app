@@ -1767,7 +1767,7 @@ async function runCell(id, visited = new Set()) {
     // Try server API first, fallback to client-side AI
     let content;
     try {
-      const response = await fetch('/api/llm', {
+      const response = await fetch('https://gpt-cells-app-production.up.railway.app/api/llm', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -1790,18 +1790,8 @@ async function runCell(id, visited = new Set()) {
 
       content = data.text || '';
     } catch (serverError) {
-      console.log('🔄 Server API failed, trying client-side AI:', serverError.message);
-      
-      // Fallback to client-side AI generation
-      if (typeof clientAI !== 'undefined') {
-        try {
-          content = await clientAI.generateContent(processedPrompt, finalModel, temperature);
-        } catch (clientError) {
-          throw new Error(`Client AI Error: ${clientError.message}`);
-        }
-      } else {
-        throw new Error(`Server unavailable and client AI not loaded: ${serverError.message}`);
-      }
+      console.log('🔄 Server API failed:', serverError.message);
+      throw new Error(`Server unavailable: ${serverError.message}`);
     }
     
     cell.output = content;
@@ -2850,7 +2840,7 @@ async function initializeApp() {
     
     // Load data from Firestore
     await loadProjectsFromDatabase();
-    loadAvailableModels();
+    // loadAvailableModels(); // Removed - only use server API
     
     // Grid is already rendered by loadProjectsFromDatabase()
     updateSheetTabs();
@@ -3662,7 +3652,7 @@ async function loadAvailableModels() {
         return;
       }
 
-      const response = await fetch('/api/models', {
+      const response = await fetch('https://gpt-cells-app-production.up.railway.app/api/models', {
         headers: {
           'Authorization': `Bearer ${tokenResult.token}`
         }
@@ -3676,31 +3666,15 @@ async function loadAvailableModels() {
         updateModelSelector(data.models);
       } else {
         console.log('No models found in server response');
+        availableModels = [];
+        window.availableModels = [];
+        updateModelSelector([]);
       }
     } catch (fallbackError) {
-      console.error('Server API failed, trying client-side models:', fallbackError);
-      
-      // Final fallback to client-side models
-      if (typeof clientAI !== 'undefined') {
-        try {
-          const clientModels = await clientAI.getAvailableModels();
-          console.log('Found models from client AI:', clientModels.length);
-          availableModels = clientModels;
-          window.availableModels = clientModels;
-          updateModelSelector(clientModels);
-        } catch (clientError) {
-          console.error('Client AI model loading failed:', clientError);
-          // Use hardcoded fallback models
-          const fallbackModels = [
-            { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', type: 'text' },
-            { id: 'gpt-4', name: 'GPT-4', type: 'text' },
-            { id: 'flux/dev', name: 'FLUX Dev', type: 'image' }
-          ];
-          availableModels = fallbackModels;
-          window.availableModels = fallbackModels;
-          updateModelSelector(fallbackModels);
-        }
-      }
+      console.error('Server API failed:', fallbackError);
+      availableModels = [];
+      window.availableModels = [];
+      updateModelSelector([]);
     }
   }
 }

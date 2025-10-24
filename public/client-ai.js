@@ -17,10 +17,10 @@ const AI_SERVICES = {
 
 // Available models (fallback if server is not available)
 const FALLBACK_MODELS = [
-  { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', type: 'text', provider: 'openrouter' },
-  { id: 'gpt-4', name: 'GPT-4', type: 'text', provider: 'openrouter' },
+  { id: 'openai/gpt-3.5-turbo', name: 'GPT-3.5 Turbo', type: 'text', provider: 'openrouter' },
+  { id: 'openai/gpt-4', name: 'GPT-4', type: 'text', provider: 'openrouter' },
   { id: 'gpt-4o', name: 'GPT-4o', type: 'text', provider: 'openrouter' },
-  { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', type: 'text', provider: 'openrouter' },
+  { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', type: 'text', provider: 'openrouter' },
   { id: 'flux/dev', name: 'FLUX Dev', type: 'image', provider: 'falai' },
   { id: 'recraft-v3', name: 'Recraft V3', type: 'image', provider: 'falai' }
 ];
