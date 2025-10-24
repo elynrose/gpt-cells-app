@@ -15,6 +15,9 @@ COPY server.js ./
 COPY firebase-server-config.js ./
 COPY local-dev-config.js ./
 
+# Copy public folder for static files
+COPY public/ ./public/
+
 # Firebase service account key is now provided via environment variables
 
 # Create non-root user for security
