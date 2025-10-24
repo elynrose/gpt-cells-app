@@ -776,12 +776,8 @@ const server = http.createServer(async (req, res) => {
       });
       return;
     }
-      
-      const firebaseApiKey = process.env.FIREBASE_API_KEY || 'AIzaSyA63ET1bNMnxY3ZVmnaa8FCUuvkMOVls5k';
-      console.log('🔧 Firebase API Key from env:', process.env.FIREBASE_API_KEY ? 'SET' : 'NOT SET');
-      console.log('🔧 Using API Key:', firebaseApiKey.substring(0, 10) + '...');
-      console.log('🔧 Full API Key for debugging:', firebaseApiKey);
-      console.log('🔧 Railway deployment test - latest code');
+
+    // Rate limiting for API endpoints
       
       const config = `// Firebase configuration and initialization
 // Using compat version for browser compatibility
