@@ -759,11 +759,23 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Firebase configuration endpoint
+    // Firebase configuration endpoint - serve the actual firebase-config.js file
     if (req.url === '/firebase-config.js') {
-      res.statusCode = 200;
-      res.setHeader('Content-Type', 'application/javascript');
-      res.setHeader('Access-Control-Allow-Origin', '*');
+      const filePath = path.join(publicDir, 'firebase-config.js');
+      fs.readFile(filePath, (err, content) => {
+        if (err) {
+          res.statusCode = 404;
+          res.setHeader('Content-Type', 'text/plain');
+          res.end('Firebase config not found');
+          return;
+        }
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.end(content);
+      });
+      return;
+    }
       
       const firebaseApiKey = process.env.FIREBASE_API_KEY || 'AIzaSyA63ET1bNMnxY3ZVmnaa8FCUuvkMOVls5k';
       console.log('🔧 Firebase API Key from env:', process.env.FIREBASE_API_KEY ? 'SET' : 'NOT SET');
