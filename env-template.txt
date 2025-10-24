@@ -1,0 +1,20 @@
+# Environment Variables for GPT Cells App
+# Copy this file to .env and fill in your actual values
+
+# OpenRouter API Key (required for AI model calls)
+# Get your key from: https://openrouter.ai/keys
+OPENROUTER_API_KEY=sk-or-your-key-here
+
+# Firebase Configuration (for cloud deployment)
+# Uncomment and fill these when deploying to cloud
+# FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"your-project-id",...}
+# GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account-key.json
+# FIREBASE_PROJECT_ID=your-project-id
+
+# Server Configuration
+PORT=3000
+
+# Other API Keys (optional)
+# OPENAI_API_KEY=sk-your-openai-key-here
+# FAL_AI_API_KEY=your-fal-ai-key-here
+

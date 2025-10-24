@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Projects - GPT Cells</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .page-header {
+            margin-bottom: 40px;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .page-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        /* Projects Grid */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+
+        .project-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .project-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .project-description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .project-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        /* Create New Project */
+        .create-project {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .create-project h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .create-project p {
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+
+        .create-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .create-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Project Creation Form */
+        .project-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .project-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .project-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .project-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .save-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .save-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .save-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .page-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="nav">
+            <a href="/" class="logo">📊 GPT Cells</a>
+            <div class="user-menu">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <span id="userEmail">Loading...</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">My Projects</h1>
+            <p class="page-subtitle">Manage your AI-powered spreadsheets</p>
+        </div>
+
+
+        <!-- Projects Grid -->
+        <div id="projectsContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading your projects...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script>
+        let currentUser = null;
+
+        // Utility functions
+        function showSuccess(message) {
+            // Create a simple success notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #28a745;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                font-weight: 500;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+
+        function showError(message) {
+            // Create a simple error notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #dc3545;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                font-weight: 500;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+        }
+
+        // Check authentication
+        authService.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                updateUserInterface(user);
+                loadProjects();
+            } else {
+                window.location.href = '/login.html';
+            }
+        });
+
+        function updateUserInterface(user) {
+            const userEmail = document.getElementById('userEmail');
+            const userAvatar = document.getElementById('userAvatar');
+            
+            if (userEmail) {
+                userEmail.textContent = user.email;
+            }
+            
+            if (userAvatar) {
+                userAvatar.textContent = user.email.charAt(0).toUpperCase();
+            }
+        }
+
+        async function loadProjects() {
+            try {
+                const projectsContainer = document.getElementById('projectsContainer');
+                
+                console.log('🔄 Loading projects from Firestore...');
+                
+                // Fetch projects from Firestore
+                const result = await firestoreService.getProjects(currentUser.uid);
+                console.log('📊 Projects result:', result);
+                
+                if (result.success && result.projects.length > 0) {
+                    const projects = result.projects;
+                    
+                    const projectsHTML = projects.map(project => {
+                        const lastModified = project.updatedAt ? 
+                            new Date(project.updatedAt.seconds * 1000).toLocaleDateString() : 
+                            'Unknown';
+                        
+                        return `
+                            <div class="project-card" onclick="openProject('${project.id}')">
+                                <div class="project-icon">📊</div>
+                                <div class="project-title">${project.name || 'Untitled Project'}</div>
+                                <div class="project-description">${project.description || 'No description available'}</div>
+                                <div class="project-meta">
+                                    <span>Modified ${lastModified}</span>
+                                    <span>${project.type || 'spreadsheet'}</span>
+                                </div>
+                                <div class="project-actions">
+                                    <a href="/app.html?project=${project.id}" class="btn btn-primary">Open</a>
+                                    <button class="btn btn-secondary" onclick="event.stopPropagation(); shareProject('${project.id}')">Share</button>
+                                    <button class="btn btn-danger" onclick="event.stopPropagation(); deleteProject('${project.id}')">Delete</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    projectsContainer.innerHTML = `
+                        <div class="projects-grid">
+                            ${projectsHTML}
+                        </div>
+                        <div class="create-project" style="margin-top: 40px;">
+                            <h3>➕ Add Another Project</h3>
+                            <p>Create a new AI-powered project</p>
+                            <div class="project-form">
+                                <input type="text" id="projectNameInput" class="project-input" placeholder="Enter project name..." maxlength="50">
+                                <button onclick="createNewProjectInline()" class="save-btn" id="createProjectBtn">Create Project</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    console.log(`✅ Loaded ${projects.length} projects from Firestore`);
+                    
+                } else {
+                    // No projects found
+                    projectsContainer.innerHTML = `
+                        <div class="create-project">
+                            <h3>📊 No Projects Yet</h3>
+                            <p>Create your first AI-powered project to get started</p>
+                            <div class="project-form">
+                                <input type="text" id="projectNameInput" class="project-input" placeholder="Enter project name..." maxlength="50">
+                                <button onclick="createNewProjectInline()" class="save-btn" id="createProjectBtn">Create Project</button>
+                            </div>
+                        </div>
+                    `;
+                    console.log('📝 No projects found for user');
+                }
+
+            } catch (error) {
+                console.error('❌ Error loading projects:', error);
+                document.getElementById('projectsContainer').innerHTML = `
+                    <div class="loading">
+                        <p>Error loading projects. Please try again.</p>
+                        <button onclick="loadProjects()" class="btn btn-primary" style="margin-top: 10px;">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        async function createNewProjectInline() {
+            try {
+                const projectNameInput = document.getElementById('projectNameInput');
+                const createBtn = document.getElementById('createProjectBtn');
+                
+                if (!projectNameInput || !createBtn) {
+                    console.error('❌ Project form elements not found');
+                    return;
+                }
+                
+                const projectName = projectNameInput.value.trim();
+                if (!projectName) {
+                    projectNameInput.focus();
+                    return;
+                }
+                
+                // Disable button and show loading state
+                createBtn.disabled = true;
+                createBtn.textContent = 'Creating...';
+                
+                console.log('🔄 Creating new project:', projectName);
+                
+                const projectData = {
+                    name: projectName,
+                    description: '',
+                    type: 'spreadsheet',
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                };
+                
+                const result = await firestoreService.createProject(currentUser.uid, projectData);
+                
+                if (result.success) {
+                    console.log('✅ Project created successfully:', result.projectId);
+                    showSuccess('Project created successfully!');
+                    
+                    // Clear the input
+                    projectNameInput.value = '';
+                    
+                    // Redirect to the new project
+                    window.location.href = `/app.html?project=${result.projectId}`;
+                } else {
+                    console.error('❌ Failed to create project:', result.error);
+                    showError('Failed to create project: ' + result.error);
+                }
+            } catch (error) {
+                console.error('❌ Error creating project:', error);
+                showError('Failed to create project. Please try again.');
+            } finally {
+                // Re-enable button
+                const createBtn = document.getElementById('createProjectBtn');
+                if (createBtn) {
+                    createBtn.disabled = false;
+                    createBtn.textContent = 'Create Project';
+                }
+            }
+        }
+
+        // Add keyboard support for Enter key
+        function setupProjectForm() {
+            const projectNameInput = document.getElementById('projectNameInput');
+            if (projectNameInput) {
+                projectNameInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        createNewProjectInline();
+                    }
+                });
+            }
+        }
+
+        function openProject(projectId) {
+            window.location.href = `/app.html?project=${projectId}`;
+        }
+
+        function shareProject(projectId) {
+            alert(`Share functionality for project ${projectId} - Coming soon!`);
+        }
+
+        async function deleteProject(projectId) {
+            if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+                try {
+                    console.log('🗑️ Deleting project:', projectId);
+                    
+                    const result = await firestoreService.deleteProject(currentUser.uid, projectId);
+                    
+                    if (result.success) {
+                        console.log('✅ Project deleted successfully');
+                        showSuccess('Project deleted successfully!');
+                        // Reload projects to update the UI
+                        await loadProjects();
+                    } else {
+                        console.error('❌ Failed to delete project:', result.error);
+                        alert('Failed to delete project: ' + result.error);
+                    }
+                } catch (error) {
+                    console.error('❌ Error deleting project:', error);
+                    alert('Failed to delete project. Please try again.');
+                }
+            }
+        }
+
+        async function logout() {
+            try {
+                if (confirm('Are you sure you want to logout?')) {
+                    const result = await authService.signOut();
+                    if (result.success) {
+                        window.location.href = '/login.html';
+                    } else {
+                        alert('Failed to logout. Please try again.');
+                    }
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                alert('Failed to logout. Please try again.');
+            }
+        }
+    </script>
+</body>
+</html>

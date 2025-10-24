@@ -1,0 +1,22 @@
+{
+  "name": "gpt-cells-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "start:firebase": "node server-firebase.js",
+    "dev": "node server.js",
+    "dev:firebase": "node server-firebase.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "firebase": "^12.4.0",
+    "firebase-admin": "^13.5.0",
+    "sqlite3": "^5.1.7"
+  }
+}

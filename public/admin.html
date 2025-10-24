@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cellulai Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .admin-sidebar {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .admin-logo {
+            padding: 0 20px 30px;
+            border-bottom: 1px solid #34495e;
+            margin-bottom: 20px;
+        }
+
+        .admin-logo h1 {
+            font-size: 24px;
+            color: #3498db;
+        }
+
+        .admin-logo p {
+            font-size: 12px;
+            color: #bdc3c7;
+            margin-top: 5px;
+        }
+
+        .admin-nav {
+            list-style: none;
+        }
+
+        .admin-nav li {
+            margin-bottom: 5px;
+        }
+
+        .admin-nav a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #bdc3c7;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .admin-nav a:hover,
+        .admin-nav a.active {
+            background: #34495e;
+            color: #3498db;
+        }
+
+        .admin-nav i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        /* Main Content */
+        .admin-main {
+            flex: 1;
+            margin-left: 250px;
+            padding: 20px;
+        }
+
+        .admin-header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-header h2 {
+            color: #2c3e50;
+            font-size: 28px;
+        }
+
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card i {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card.users i { color: #3498db; }
+        .stat-card.projects i { color: #e74c3c; }
+        .stat-card.models i { color: #f39c12; }
+        .stat-card.revenue i { color: #27ae60; }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        /* Content Sections */
+        .admin-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Tables */
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .admin-table th,
+        .admin-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .admin-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .admin-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary { background: #3498db; color: white; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-secondary { background: #95a5a6; color: white; }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        /* Status badges */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active { background: #d4edda; color: #155724; }
+        .status-inactive { background: #f8d7da; color: #721c24; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-premium { background: #cce5ff; color: #004085; }
+        .status-free { background: #e2e3e5; color: #383d41; }
+
+        /* Search and filters */
+        .admin-filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-select {
+            min-width: 150px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+
+            .admin-sidebar.open {
+                transform: translateX(0);
+            }
+
+            .admin-main {
+                margin-left: 0;
+            }
+
+            .admin-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-filters {
+                flex-direction: column;
+            }
+        }
+
+        /* Loading states */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        /* Toggle Switch Styles */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .slider:hover {
+            box-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <nav class="admin-sidebar" id="adminSidebar">
+            <div class="admin-logo">
+                <h1><i class="fas fa-shield-alt"></i> Admin Panel</h1>
+                <p>Cellulai Management</p>
+            </div>
+            <ul class="admin-nav">
+                <li><a href="#" onclick="showSection('dashboard')" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="#" onclick="showSection('users')"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="#" onclick="showSection('projects')"><i class="fas fa-folder"></i> Projects</a></li>
+                <li><a href="#" onclick="showSection('models')"><i class="fas fa-brain"></i> AI Models</a></li>
+                <li><a href="#" onclick="showSection('subscriptions')"><i class="fas fa-crown"></i> Subscriptions</a></li>
+                <li><a href="#" onclick="showSection('payments')"><i class="fas fa-credit-card"></i> Payments</a></li>
+                <li><a href="#" onclick="showSection('analytics')"><i class="fas fa-chart-line"></i> Analytics</a></li>
+                <li><a href="#" onclick="showSection('settings')"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Header -->
+            <header class="admin-header">
+                <h2 id="adminTitle">Dashboard</h2>
+                <div>
+                    <span id="adminUserInfo">Loading...</span>
+                    <button class="btn btn-secondary" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <div class="admin-stats">
+                    <div class="stat-card users">
+                        <i class="fas fa-users"></i>
+                        <div class="stat-number" id="totalUsers">-</div>
+                        <div class="stat-label">Total Users</div>
+                    </div>
+                    <div class="stat-card projects">
+                        <i class="fas fa-folder"></i>
+                        <div class="stat-number" id="totalProjects">-</div>
+                        <div class="stat-label">Total Projects</div>
+                    </div>
+                    <div class="stat-card models">
+                        <i class="fas fa-brain"></i>
+                        <div class="stat-number" id="totalModels">-</div>
+                        <div class="stat-label">AI Models</div>
+                    </div>
+                    <div class="stat-card revenue">
+                        <i class="fas fa-dollar-sign"></i>
+                        <div class="stat-number" id="totalRevenue">-</div>
+                        <div class="stat-label">Total Revenue</div>
+                    </div>
+                </div>
+
+                <div class="admin-content">
+                    <h3>Recent Activity</h3>
+                    <div id="recentActivity" class="loading">
+                        <div class="spinner"></div>
+                        Loading recent activity...
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section id="users" class="content-section">
+                <div class="admin-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>User Management</h3>
+                        <button class="btn btn-primary" onclick="openUserModal()">
+                            <i class="fas fa-plus"></i> Add User
+                        </button>
+                    </div>
+
+                    <div class="admin-filters">
+                        <div class="search-box">
+                            <input type="text" class="form-control" id="userSearch" placeholder="Search users..." onkeyup="filterUsers()">
+                        </div>
+                        <select class="form-control filter-select" id="userStatusFilter" onchange="filterUsers()">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                        <select class="form-control filter-select" id="userRoleFilter" onchange="filterUsers()">
+                            <option value="">All Roles</option>
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td colspan="6" class="loading">
+                                    <div class="spinner"></div>
+                                    Loading users...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Projects Section -->
+            <section id="projects" class="content-section">
+                <div class="admin-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>Project Management</h3>
+                        <button class="btn btn-primary" onclick="openProjectModal()">
+                            <i class="fas fa-plus"></i> Add Project
+                        </button>
+                    </div>
+
+                    <div class="admin-filters">
+                        <div class="search-box">
+                            <input type="text" class="form-control" id="projectSearch" placeholder="Search projects..." onkeyup="filterProjects()">
+                        </div>
+                        <select class="form-control filter-select" id="projectStatusFilter" onchange="filterProjects()">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                    </div>
+
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Owner</th>
+                                <th>Sheets</th>
+                                <th>Created</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectsTableBody">
+                            <tr>
+                                <td colspan="6" class="loading">
+                                    <div class="spinner"></div>
+                                    Loading projects...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Models Section -->
+            <section id="models" class="content-section">
+                <div class="admin-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>AI Model Management</h3>
+                        <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" onclick="configureFalAI()">
+                    <i class="fas fa-cog"></i> Configure Fal.ai
+                </button>
+                <button class="btn btn-success" onclick="syncFalAIModels()">
+                    <i class="fas fa-sync"></i> Sync Fal.ai Models
+                </button>
+                <button class="btn btn-secondary" onclick="configureOpenRouter()">
+                    <i class="fas fa-cog"></i> Configure OpenRouter
+                </button>
+                <button class="btn btn-success" onclick="syncOpenRouterModels()">
+                    <i class="fas fa-sync"></i> Sync OpenRouter Models
+                </button>
+                            <button class="btn btn-warning" onclick="migrateExistingModels()">
+                                <i class="fas fa-database"></i> Migrate Existing Models
+                            </button>
+                            <button class="btn btn-primary" onclick="openModelModal()">
+                                <i class="fas fa-plus"></i> Add Model
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="admin-filters">
+                        <div class="search-box">
+                            <input type="text" class="form-control" id="modelSearch" placeholder="Search models..." onkeyup="filterModels()">
+                        </div>
+                        <select class="form-control filter-select" id="modelTypeFilter" onchange="filterModels()">
+                            <option value="">All Types</option>
+                            <option value="text">Text</option>
+                            <option value="image">Image</option>
+                            <option value="audio">Audio</option>
+                            <option value="video">Video</option>
+                        </select>
+                        <select class="form-control filter-select" id="modelProviderFilter" onchange="filterModels()">
+                            <option value="">All Providers</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="stability-ai">Stability AI</option>
+                            <option value="runway">RunwayML</option>
+                        </select>
+                        <select class="form-control filter-select" id="modelStatusFilter" onchange="filterModels()">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Model ID</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Provider</th>
+                                <th>Active</th>
+                                <th>Source</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modelsTableBody">
+                            <tr>
+                                <td colspan="6" class="loading">
+                                    <div class="spinner"></div>
+                                    Loading models...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Subscriptions Section -->
+            <section id="subscriptions" class="content-section">
+                <div class="admin-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>Subscription Management</h3>
+                        <button class="btn btn-primary" onclick="openSubscriptionModal()">
+                            <i class="fas fa-plus"></i> Add Subscription Plan
+                        </button>
+                    </div>
+
+                    <div class="admin-filters">
+                        <div class="search-box">
+                            <input type="text" class="form-control" id="subscriptionSearch" placeholder="Search subscriptions..." onkeyup="filterSubscriptions()">
+                        </div>
+                        <select class="form-control filter-select" id="subscriptionPlanFilter" onchange="filterSubscriptions()">
+                            <option value="">All Plans</option>
+                            <option value="free">Free</option>
+                            <option value="premium">Premium</option>
+                            <option value="enterprise">Enterprise</option>
+                        </select>
+                    </div>
+
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Plan Name</th>
+                                <th>Price</th>
+                                <th>Interval</th>
+                                <th>Features</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subscriptionsTableBody">
+                            <tr>
+                                <td colspan="6" class="loading">
+                                    <div class="spinner"></div>
+                                    Loading subscriptions...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Payments Section -->
+            <section id="payments" class="content-section">
+                <div class="admin-content">
+                    <h3>Payment Management</h3>
+
+                    <div class="admin-filters">
+                        <div class="search-box">
+                            <input type="text" class="form-control" id="paymentSearch" placeholder="Search payments..." onkeyup="filterPayments()">
+                        </div>
+                        <select class="form-control filter-select" id="paymentStatusFilter" onchange="filterPayments()">
+                            <option value="">All Status</option>
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                        <input type="date" class="form-control" id="paymentDateFrom" onchange="filterPayments()">
+                        <input type="date" class="form-control" id="paymentDateTo" onchange="filterPayments()">
+                    </div>
+
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>User</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentsTableBody">
+                            <tr>
+                                <td colspan="6" class="loading">
+                                    <div class="spinner"></div>
+                                    Loading payments...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Analytics Section -->
+            <section id="analytics" class="content-section">
+                <div class="admin-content">
+                    <h3>Analytics Dashboard</h3>
+                    <div id="analyticsContent" class="loading">
+                        <div class="spinner"></div>
+                        Loading analytics...
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="content-section">
+                <div class="admin-content">
+                    <h3>System Settings</h3>
+                    <div id="settingsContent" class="loading">
+                        <div class="spinner"></div>
+                        Loading settings...
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- User Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="userModalTitle">Add User</h3>
+                <span class="close" onclick="closeUserModal()">&times;</span>
+            </div>
+            <form id="userForm">
+                <div class="form-group">
+                    <label for="userEmail">Email:</label>
+                    <input type="email" class="form-control" id="userEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="userDisplayName">Display Name:</label>
+                    <input type="text" class="form-control" id="userDisplayName" required>
+                </div>
+                <div class="form-group">
+                    <label for="userRole">Role:</label>
+                    <select class="form-control" id="userRole" required>
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="userSubscription">Subscription:</label>
+                    <select class="form-control" id="userSubscription">
+                        <option value="free">Free</option>
+                        <option value="premium">Premium</option>
+                        <option value="enterprise">Enterprise</option>
+                    </select>
+                </div>
+                <div style="text-align: right;">
+                    <button type="button" class="btn btn-secondary" onclick="closeUserModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Project Modal -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="projectModalTitle">Add Project</h3>
+                <span class="close" onclick="closeProjectModal()">&times;</span>
+            </div>
+            <form id="projectForm">
+                <div class="form-group">
+                    <label for="projectName">Project Name:</label>
+                    <input type="text" class="form-control" id="projectName" required>
+                </div>
+                <div class="form-group">
+                    <label for="projectOwner">Owner:</label>
+                    <select class="form-control" id="projectOwner" required>
+                        <option value="">Select Owner</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="projectDescription">Description:</label>
+                    <textarea class="form-control" id="projectDescription" rows="3"></textarea>
+                </div>
+                <div style="text-align: right;">
+                    <button type="button" class="btn btn-secondary" onclick="closeProjectModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Model Modal -->
+    <div id="modelModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modelModalTitle">Add AI Model</h3>
+                <span class="close" onclick="closeModelModal()">&times;</span>
+            </div>
+            <form id="modelForm">
+                <div class="form-group">
+                    <label for="modelId">Model ID:</label>
+                    <input type="text" class="form-control" id="modelId" required>
+                </div>
+                <div class="form-group">
+                    <label for="modelName">Model Name:</label>
+                    <input type="text" class="form-control" id="modelName" required>
+                </div>
+                <div class="form-group">
+                    <label for="modelType">Type:</label>
+                    <select class="form-control" id="modelType" required>
+                        <option value="text">Text</option>
+                        <option value="image">Image</option>
+                        <option value="audio">Audio</option>
+                        <option value="video">Video</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modelProvider">Provider:</label>
+                    <select class="form-control" id="modelProvider" required>
+                        <option value="openai">OpenAI</option>
+                        <option value="stability-ai">Stability AI</option>
+                        <option value="runway">RunwayML</option>
+                        <option value="pika">Pika Labs</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modelDescription">Description:</label>
+                    <textarea class="form-control" id="modelDescription" rows="3"></textarea>
+                </div>
+                <div style="text-align: right;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModelModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Model</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Subscription Modal -->
+    <div id="subscriptionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="subscriptionModalTitle">Add Subscription Plan</h3>
+                <span class="close" onclick="closeSubscriptionModal()">&times;</span>
+            </div>
+            <form id="subscriptionForm">
+                <div class="form-group">
+                    <label for="subscriptionPlanName">Plan Name:</label>
+                    <input type="text" class="form-control" id="subscriptionPlanName" required>
+                </div>
+                <div class="form-group">
+                    <label for="subscriptionPrice">Price:</label>
+                    <input type="number" class="form-control" id="subscriptionPrice" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="subscriptionInterval">Interval:</label>
+                    <select class="form-control" id="subscriptionInterval" required>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="subscriptionFeatures">Features:</label>
+                    <textarea class="form-control" id="subscriptionFeatures" rows="4" placeholder="List features separated by commas"></textarea>
+                </div>
+                <div style="text-align: right;">
+                    <button type="button" class="btn btn-secondary" onclick="closeSubscriptionModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
