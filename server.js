@@ -409,9 +409,9 @@ async function makeAPIRequest(provider, endpoint, data = null, apiKey = null) {
     let finalApiKey = apiKey;
     if (!finalApiKey) {
       if (provider === 'fal-ai') {
-        finalApiKey = await getFalAIApiKey();
+        finalApiKey = process.env.FAL_AI_API_KEY;
       } else if (provider === 'openrouter') {
-        finalApiKey = await getOpenRouterApiKey();
+        finalApiKey = process.env.OPENROUTER_API_KEY;
       } else {
         finalApiKey = config.apiKey;
       }
@@ -596,10 +596,10 @@ async function callHybridAI(model, prompt, temperature = 0.7) {
     if (isImageModel) {
       // Image generation via Fal.ai
       
-      // Get Fal.ai API key from Firebase
-      const falApiKey = await getFalAIApiKey();
+      // Get Fal.ai API key from environment variables
+      const falApiKey = process.env.FAL_AI_API_KEY;
       if (!falApiKey) {
-        throw new Error('Fal.ai API key is required for image generation. Please configure it in the admin panel.');
+        throw new Error('Fal.ai API key is required for image generation. Please configure FAL_AI_API_KEY in Railway.');
       }
       
       // Convert sanitized model ID back to original format for Fal.ai
@@ -618,10 +618,10 @@ async function callHybridAI(model, prompt, temperature = 0.7) {
     } else if (isTextModel) {
       // Text generation via OpenRouter
       
-      // Get OpenRouter API key from Firebase
-      const openRouterApiKey = await getOpenRouterApiKey();
+      // Get OpenRouter API key from environment variables
+      const openRouterApiKey = process.env.OPENROUTER_API_KEY;
       if (!openRouterApiKey) {
-        throw new Error('OpenRouter API key is required for text generation. Please configure it in the admin panel.');
+        throw new Error('OpenRouter API key is required for text generation. Please configure OPENROUTER_API_KEY in Railway.');
       }
       
       // Convert sanitized model ID back to original format for OpenRouter
@@ -642,9 +642,9 @@ async function callHybridAI(model, prompt, temperature = 0.7) {
     } else {
       // Default to text generation via OpenRouter
       
-      const openRouterApiKey = await getOpenRouterApiKey();
+      const openRouterApiKey = process.env.OPENROUTER_API_KEY;
       if (!openRouterApiKey) {
-        throw new Error('OpenRouter API key is required for text generation. Please configure it in the admin panel.');
+        throw new Error('OpenRouter API key is required for text generation. Please configure OPENROUTER_API_KEY in Railway.');
       }
       
       const originalModelId = await getOriginalModelId(model);
