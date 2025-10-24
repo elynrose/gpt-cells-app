@@ -745,6 +745,20 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Debug endpoint to check environment variables
+    if (req.url === '/debug-env') {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.end(JSON.stringify({
+        FIREBASE_API_KEY: process.env.FIREBASE_API_KEY ? 'SET' : 'NOT SET',
+        FIREBASE_API_KEY_VALUE: process.env.FIREBASE_API_KEY ? process.env.FIREBASE_API_KEY.substring(0, 10) + '...' : 'NOT SET',
+        NODE_ENV: process.env.NODE_ENV,
+        allEnvKeys: Object.keys(process.env).filter(key => key.includes('FIREBASE'))
+      }));
+      return;
+    }
+
     // Firebase configuration endpoint
     if (req.url === '/firebase-config.js') {
       res.statusCode = 200;
