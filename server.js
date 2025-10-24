@@ -778,8 +778,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Rate limiting for API endpoints
-      
-      const config = `// Firebase configuration and initialization
+    if (req.url.startsWith('/api/') && !checkRateLimit(clientIP)) {
 // Using compat version for browser compatibility
 // Updated: 2025-01-24 - Dynamic API key from environment
 
