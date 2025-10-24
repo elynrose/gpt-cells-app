@@ -19,10 +19,20 @@ Write-Host "✅ Git repository initialized with $commitCount commit(s)" -Foregro
 Write-Host ""
 
 # Check if remote origin exists
-$remoteUrl = git remote get-url origin 2>$null
-if ($remoteUrl) {
-    Write-Host "✅ Remote origin already set: $remoteUrl" -ForegroundColor Green
-} else {
+try {
+    $remoteUrl = git remote get-url origin 2>$null
+    if ($remoteUrl) {
+        Write-Host "✅ Remote origin already set: $remoteUrl" -ForegroundColor Green
+    } else {
+        Write-Host "⚠️ No remote origin set. You need to:" -ForegroundColor Yellow
+        Write-Host "1. Create a repository on GitHub" -ForegroundColor Cyan
+        Write-Host "2. Add remote origin:" -ForegroundColor Cyan
+        Write-Host "   git remote add origin https://github.com/YOUR_USERNAME/gpt-cells-app.git" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "📋 Follow the steps in GITHUB_SETUP.md" -ForegroundColor Yellow
+        exit 0
+    }
+} catch {
     Write-Host "⚠️ No remote origin set. You need to:" -ForegroundColor Yellow
     Write-Host "1. Create a repository on GitHub" -ForegroundColor Cyan
     Write-Host "2. Add remote origin:" -ForegroundColor Cyan
