@@ -15,8 +15,7 @@ COPY server.js ./
 COPY firebase-server-config.js ./
 COPY local-dev-config.js ./
 
-# Copy Firebase service account key
-COPY cellulai-firebase-adminsdk-fbsvc-ec0b26e7de.json ./
+# Firebase service account key is now provided via environment variables
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs
