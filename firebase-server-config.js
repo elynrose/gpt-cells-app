@@ -207,7 +207,7 @@ async function getActiveModelsFromFirebase() {
       return [];
     }
 
-    const modelsSnapshot = await firestore.collection('models').where('active', '==', true).get();
+    const modelsSnapshot = await firestore.collection('models').where('isActive', '==', true).get();
     const models = [];
     
     modelsSnapshot.forEach(doc => {
@@ -217,7 +217,7 @@ async function getActiveModelsFromFirebase() {
         name: modelData.name,
         type: modelData.type,
         provider: modelData.provider,
-        active: modelData.active
+        active: modelData.isActive
       });
     });
 
