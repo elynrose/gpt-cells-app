@@ -431,15 +431,15 @@
                 currentUser = user;
                 updateUserInterface(user);
                 
-                // Wait for firestoreService to be available
-                if (typeof firestoreService === 'undefined') {
-                    console.log('⏳ Waiting for firestoreService to load...');
+                // Wait for Firebase services to be available
+                if (typeof db === 'undefined') {
+                    console.log('⏳ Waiting for Firebase db to load...');
                     setTimeout(() => {
-                        if (typeof firestoreService !== 'undefined') {
-                            console.log('✅ firestoreService loaded, loading projects...');
+                        if (typeof db !== 'undefined') {
+                            console.log('✅ Firebase db loaded, loading projects...');
                             loadProjects();
                         } else {
-                            console.error('❌ firestoreService still not available after timeout');
+                            console.error('❌ Firebase db still not available after timeout');
                             document.getElementById('projectsContainer').innerHTML = `
                                 <div class="loading">
                                     <p>Firebase services not loaded. Please refresh the page.</p>
@@ -475,14 +475,23 @@
                 
                 console.log('🔄 Loading projects from Firestore...');
                 
-                // Check if firestoreService is available
-                if (typeof firestoreService === 'undefined') {
-                    console.error('❌ firestoreService not available');
+                // Check if Firebase services are available
+                if (typeof db === 'undefined') {
+                    console.error('❌ Firebase db not available');
                     throw new Error('Firebase services not loaded');
                 }
                 
-                // Fetch projects from Firestore
-                const result = await firestoreService.getProjects(currentUser.uid);
+                // Fetch projects from Firestore directly
+                const projectsSnapshot = await db.collection('users').doc(currentUser.uid).collection('projects').get();
+                const projects = [];
+                projectsSnapshot.forEach(doc => {
+                    projects.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                const result = { success: true, projects: projects };
                 console.log('📊 Projects result:', result);
                 
                 if (result.success && result.projects.length > 0) {
