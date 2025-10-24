@@ -1,13 +1,10 @@
 /**
  * Firebase Server Configuration
- * For cloud deployment - server-side Firebase integration
+ * Handles Firebase Admin SDK initialization and API key retrieval
  */
 
-// Firebase Admin SDK setup for server-side operations
 const admin = require('firebase-admin');
 
-// Initialize Firebase Admin SDK
-let firebaseApp = null;
 let firestore = null;
 
 /**
@@ -15,37 +12,111 @@ let firestore = null;
  */
 async function initializeFirebase() {
   try {
-    // Check if Firebase is already initialized
-    if (firebaseApp) {
-      return firebaseApp;
+    if (firestore) {
+      return firestore;
     }
 
-    // For cloud deployment, use service account key or environment variables
-    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      // Use service account key from environment variable
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-      firebaseApp = admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: process.env.FIREBASE_PROJECT_ID || 'cellulai'
-      });
-    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      // Use service account file path
-      firebaseApp = admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
-        projectId: process.env.FIREBASE_PROJECT_ID || 'cellulai'
-      });
+    // Check if we're in production (Railway/Heroku) or development
+    if (process.env.NODE_ENV === 'production') {
+      // Production: Use environment variables for service account
+      if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+        try {
+          // Check if the environment variable is empty or invalid
+          if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY || process.env.FIREBASE_SERVICE_ACCOUNT_KEY.trim() === '') {
+            console.log('⚠️ FIREBASE_SERVICE_ACCOUNT_KEY is empty, skipping Firebase Admin SDK');
+            return null;
+          }
+          
+          const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+          // Check if the service account has a valid private_key
+          if (serviceAccount.private_key && serviceAccount.private_key !== '' && serviceAccount.private_key !== '""' && !serviceAccount.private_key.includes('""')) {
+            console.log('✅ Using Firebase service account credentials');
+            admin.initializeApp({
+              credential: admin.credential.cert(serviceAccount),
+              projectId: process.env.FIREBASE_PROJECT_ID || 'cellulai'
+            });
+          } else {
+            // Invalid service account, skip Firebase Admin SDK initialization
+            console.log('⚠️ Invalid Firebase service account (no private_key), skipping Firebase Admin SDK');
+            console.log('⚠️ Firebase client config will still work via /firebase-config.js endpoint');
+            return null; // Return null to indicate no Firebase Admin SDK
+          }
+        } catch (error) {
+          // Invalid JSON, skip Firebase Admin SDK initialization
+          console.log('⚠️ Invalid Firebase service account JSON, skipping Firebase Admin SDK');
+          console.log('⚠️ Error details:', error.message);
+          console.log('⚠️ Firebase client config will still work via /firebase-config.js endpoint');
+          return null; // Return null to indicate no Firebase Admin SDK
+        }
+      } else {
+        // Fallback: Use default credentials (for Railway/Heroku)
+        admin.initializeApp({
+          projectId: process.env.FIREBASE_PROJECT_ID || 'cellulai'
+        });
+      }
     } else {
-      // For local development, you might want to use a service account file
-      console.log('⚠️ Firebase Admin SDK not configured. Please set up service account credentials.');
-      return null;
+      // Development: Use environment variables or service account file
+      if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+        try {
+          const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+          // Check if the service account has a valid private_key
+          if (serviceAccount.private_key && serviceAccount.private_key !== '') {
+            admin.initializeApp({
+              credential: admin.credential.cert(serviceAccount),
+              projectId: process.env.FIREBASE_PROJECT_ID || 'cellulai'
+            });
+          } else {
+            // Invalid service account, try local file or default
+            console.log('⚠️ Invalid Firebase service account, trying local file');
+            try {
+              const serviceAccount = require('./cellulai-firebase-adminsdk-fbsvc-ec0b26e7de.json');
+              admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+                projectId: 'cellulai'
+              });
+            } catch (error) {
+              admin.initializeApp({
+                projectId: 'cellulai'
+              });
+            }
+          }
+        } catch (error) {
+          // Invalid JSON, try local file or default
+          console.log('⚠️ Invalid Firebase service account JSON, trying local file');
+          try {
+            const serviceAccount = require('./cellulai-firebase-adminsdk-fbsvc-ec0b26e7de.json');
+            admin.initializeApp({
+              credential: admin.credential.cert(serviceAccount),
+              projectId: 'cellulai'
+            });
+          } catch (error) {
+            admin.initializeApp({
+              projectId: 'cellulai'
+            });
+          }
+        }
+      } else {
+        // Fallback: Use service account file (if available)
+        try {
+          const serviceAccount = require('./cellulai-firebase-adminsdk-fbsvc-ec0b26e7de.json');
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+            projectId: 'cellulai'
+          });
+        } catch (error) {
+          // No service account file, use default credentials
+          admin.initializeApp({
+            projectId: 'cellulai'
+          });
+        }
+      }
     }
 
     firestore = admin.firestore();
-    console.log('✅ Firebase Admin initialized');
-    
-    return firebaseApp;
+    console.log('✅ Firebase Admin SDK initialized');
+    return firestore;
   } catch (error) {
-    console.error('❌ Error initializing Firebase Admin SDK:', error);
+    console.error('❌ Firebase initialization failed:', error);
     return null;
   }
 }
@@ -136,22 +207,17 @@ async function getActiveModelsFromFirebase() {
       return [];
     }
 
-    // Get active models from Firebase
-    const snapshot = await firestore.collection('models')
-      .where('status', '==', 'active')
-      .get();
-
+    const modelsSnapshot = await firestore.collection('models').where('active', '==', true).get();
     const models = [];
-    snapshot.forEach(doc => {
+    
+    modelsSnapshot.forEach(doc => {
       const modelData = doc.data();
       models.push({
-        id: modelData.id,
-        originalId: modelData.originalId || modelData.id,
+        id: doc.id,
         name: modelData.name,
         type: modelData.type,
         provider: modelData.provider,
-        description: modelData.description,
-        status: modelData.status
+        active: modelData.active
       });
     });
 
@@ -167,7 +233,7 @@ async function getActiveModelsFromFirebase() {
 /**
  * Save generation to Firebase
  */
-async function saveGenerationToFirebase(userId, projectId, sheetId, cellId, generationData) {
+async function saveGenerationToFirebase(userId, projectId, sheetId, cellId, generation) {
   try {
     if (!firestore) {
       await initializeFirebase();
@@ -178,8 +244,7 @@ async function saveGenerationToFirebase(userId, projectId, sheetId, cellId, gene
       return false;
     }
 
-    // Save generation to Firebase
-    const docRef = firestore
+    await firestore
       .collection('users')
       .doc(userId)
       .collection('projects')
@@ -189,14 +254,10 @@ async function saveGenerationToFirebase(userId, projectId, sheetId, cellId, gene
       .collection('cells')
       .doc(cellId)
       .collection('generations')
-      .doc();
-
-    await docRef.set({
-      ...generationData,
-      id: docRef.id,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+      .add({
+        ...generation,
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+      });
 
     console.log('✅ Generation saved to Firebase');
     return true;

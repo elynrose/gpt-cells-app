@@ -1,9 +1,10 @@
 // Firebase configuration and initialization
 // Using compat version for browser compatibility
+// Updated: 2025-01-24 - Fixed API key - v2
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
+  apiKey: "AIzaSyA63ET1bNMnxY3ZVmnaa8FCUuvkMOVls5k",
   authDomain: "cellulai.firebaseapp.com",
   projectId: "cellulai",
   storageBucket: "cellulai.firebasestorage.app",

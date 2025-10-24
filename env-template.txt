@@ -1,20 +1,28 @@
-# Environment Variables for GPT Cells App
+# GPT Cells App Environment Variables Template
 # Copy this file to .env and fill in your actual values
+# DO NOT commit the .env file to version control
 
-# OpenRouter API Key (required for AI model calls)
-# Get your key from: https://openrouter.ai/keys
-OPENROUTER_API_KEY=sk-or-your-key-here
+# Node Environment
+NODE_ENV=development
 
-# Firebase Configuration (for cloud deployment)
-# Uncomment and fill these when deploying to cloud
-# FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"your-project-id",...}
-# GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account-key.json
-# FIREBASE_PROJECT_ID=your-project-id
+# API Keys - Get these from your service providers
+FAL_AI_API_KEY=your-fal-ai-api-key-here
+OPENROUTER_API_KEY=your-openrouter-api-key-here
+
+# Firebase Configuration
+FIREBASE_PROJECT_ID=cellulai
+FIREBASE_API_KEY=AIzaSyA63ET1bNMnxY3ZVmnaa8FCUuvkMOVls5k
+FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"cellulai","private_key_id":"","private_key":"","client_email":"","client_id":"","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":""}
 
 # Server Configuration
 PORT=3000
 
-# Other API Keys (optional)
-# OPENAI_API_KEY=sk-your-openai-key-here
-# FAL_AI_API_KEY=your-fal-ai-key-here
+# Database Configuration
+DATABASE_URL=./spreadsheet.db
 
+# Rate Limiting
+RATE_LIMIT_WINDOW=60000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Cache Configuration
+CACHE_DURATION=300000
