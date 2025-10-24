@@ -16,6 +16,10 @@ yarn-error.log*
 firebase-debug.log
 firebase-debug.*.log
 
+# Firebase service account keys
+*firebase-adminsdk*.json
+firebase-service-account.json
+
 # Database files
 *.db
 *.sqlite
