@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT Cells - Authentication</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .auth-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .auth-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .auth-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .toggle-auth {
+            margin-top: 20px;
+            color: #666;
+        }
+
+        .toggle-auth a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .toggle-auth a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #fcc;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #cfc;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="logo">📊 GPT Cells</div>
+        <div class="subtitle">AI-Powered Spreadsheet Platform</div>
+        
+        <!-- Sign In Form -->
+        <div id="signInForm" class="auth-form">
+            <h2>Welcome Back</h2>
+            <div id="signInError" class="error-message hidden"></div>
+            <div class="form-group">
+                <label for="signInEmail">Email</label>
+                <input type="email" id="signInEmail" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label for="signInPassword">Password</label>
+                <input type="password" id="signInPassword" placeholder="Enter your password" required>
+            </div>
+            <button id="signInButton" class="auth-button">
+                <span id="signInText">Sign In</span>
+                <span id="signInLoading" class="loading hidden"></span>
+            </button>
+            <div class="toggle-auth">
+                Don't have an account? <a href="#" id="showSignUp">Sign up</a>
+            </div>
+        </div>
+
+        <!-- Sign Up Form -->
+        <div id="signUpForm" class="auth-form hidden">
+            <h2>Create Account</h2>
+            <div id="signUpError" class="error-message hidden"></div>
+            <div class="form-group">
+                <label for="signUpName">Full Name</label>
+                <input type="text" id="signUpName" placeholder="Enter your full name" required>
+            </div>
+            <div class="form-group">
+                <label for="signUpEmail">Email</label>
+                <input type="email" id="signUpEmail" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label for="signUpPassword">Password</label>
+                <input type="password" id="signUpPassword" placeholder="Create a password" required>
+            </div>
+            <button id="signUpButton" class="auth-button">
+                <span id="signUpText">Create Account</span>
+                <span id="signUpLoading" class="loading hidden"></span>
+            </button>
+            <div class="toggle-auth">
+                Already have an account? <a href="#" id="showSignIn">Sign in</a>
+            </div>
+        </div>
+    </div>
+
+  <!-- Firebase CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  
+  <script src="firebase-config.js"></script>
+  <script>
+
+        // DOM elements
+        const signInForm = document.getElementById('signInForm');
+        const signUpForm = document.getElementById('signUpForm');
+        const signInButton = document.getElementById('signInButton');
+        const signUpButton = document.getElementById('signUpButton');
+        const signInError = document.getElementById('signInError');
+        const signUpError = document.getElementById('signUpError');
+
+        // Toggle between sign in and sign up
+        document.getElementById('showSignUp').addEventListener('click', (e) => {
+            e.preventDefault();
+            signInForm.classList.add('hidden');
+            signUpForm.classList.remove('hidden');
+        });
+
+        document.getElementById('showSignIn').addEventListener('click', (e) => {
+            e.preventDefault();
+            signUpForm.classList.add('hidden');
+            signInForm.classList.remove('hidden');
+        });
+
+        // Sign in handler
+        signInButton.addEventListener('click', async () => {
+            const email = document.getElementById('signInEmail').value;
+            const password = document.getElementById('signInPassword').value;
+
+            if (!email || !password) {
+                showError('signInError', 'Please fill in all fields');
+                return;
+            }
+
+            setLoading('signInButton', true);
+            hideError('signInError');
+
+            const result = await authService.signIn(email, password);
+            
+            if (result.success) {
+                // Redirect to main app
+                window.location.href = '/';
+            } else {
+                showError('signInError', result.error);
+            }
+            
+            setLoading('signInButton', false);
+        });
+
+        // Sign up handler
+        signUpButton.addEventListener('click', async () => {
+            const name = document.getElementById('signUpName').value;
+            const email = document.getElementById('signUpEmail').value;
+            const password = document.getElementById('signUpPassword').value;
+
+            if (!name || !email || !password) {
+                showError('signUpError', 'Please fill in all fields');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('signUpError', 'Password must be at least 6 characters');
+                return;
+            }
+
+            setLoading('signUpButton', true);
+            hideError('signUpError');
+
+            const result = await authService.signUp(email, password, name);
+            
+            if (result.success) {
+                showSuccess('signUpError', 'Account created successfully! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+            } else {
+                showError('signUpError', result.error);
+            }
+            
+            setLoading('signUpButton', false);
+        });
+
+        // Helper functions
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.classList.remove('hidden');
+        }
+
+        function hideError(elementId) {
+            const element = document.getElementById(elementId);
+            element.classList.add('hidden');
+        }
+
+        function showSuccess(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.classList.remove('hidden');
+            element.classList.remove('error-message');
+            element.classList.add('success-message');
+        }
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const text = button.querySelector('span:first-child');
+            const loading = button.querySelector('span:last-child');
+            
+            if (isLoading) {
+                button.disabled = true;
+                text.classList.add('hidden');
+                loading.classList.remove('hidden');
+            } else {
+                button.disabled = false;
+                text.classList.remove('hidden');
+                loading.classList.add('hidden');
+            }
+        }
+
+        // Check if user is already authenticated
+        authService.onAuthStateChanged((user) => {
+            if (user) {
+                window.location.href = '/';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+// Firestore Security Rules for GPT Cells App
+// Simplified rules with admin support
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+    
+    // Helper function to check if user is owner
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow all access for demo user (for testing)
+    match /users/demo-user-123 {
+      allow read, write: if true;
+      
+      match /projects/{projectId} {
+        allow read, write: if true;
+        
+        match /sheets/{sheetId} {
+          allow read, write: if true;
+          
+          match /cells/{cellId} {
+            allow read, write: if true;
+            
+            match /generations/{generationId} {
+              allow read, write: if true;
+            }
+          }
+        }
+      }
+    }
+    
+    // Users collection - admins can read all, users can only access their own
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+      
+      // Allow access to user's projects
+      match /projects/{projectId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+        
+        // Allow access to project's sheets
+        match /sheets/{sheetId} {
+          allow read, write: if isOwner(userId) || isAdmin();
+          
+          // Allow access to sheet cells
+          match /cells/{cellId} {
+            allow read, write: if isOwner(userId) || isAdmin();
+            
+            // Allow access to cell generations (for future subcollection use)
+            match /generations/{generationId} {
+              allow read, write: if isOwner(userId) || isAdmin();
+            }
+          }
+        }
+      }
+    }
+    
+    // Allow all users to read models and settings (even unauthenticated)
+    match /models/{modelId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    match /modelCategories/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Admin-only collections
+    match /admin/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Analytics collection (admin only)
+    match /analytics/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // System logs (admin only)
+    match /logs/{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
+erd 
