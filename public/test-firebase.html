@@ -29,25 +29,30 @@
                 // Test Firebase connection
                 statusDiv.innerHTML = '✅ Firebase connected';
                 
-                // Test authentication
-                const user = auth.currentUser;
-                if (user) {
-                    userDiv.innerHTML = `✅ User authenticated: ${user.email}`;
-                    
-                    // Test Firestore
-                    try {
-                        const projectsSnapshot = await db.collection('users').doc(user.uid).collection('projects').get();
-                        projectsDiv.innerHTML = `✅ Projects found: ${projectsSnapshot.size}`;
+                // Wait for authentication state to be ready
+                statusDiv.innerHTML = '🔄 Waiting for authentication state...';
+                
+                // Listen for auth state changes
+                auth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        userDiv.innerHTML = `✅ User authenticated: ${user.email}`;
                         
-                        if (projectsSnapshot.size === 0) {
-                            projectsDiv.innerHTML += '<br>📝 No projects found - this is normal for new users';
+                        // Test Firestore
+                        try {
+                            const projectsSnapshot = await db.collection('users').doc(user.uid).collection('projects').get();
+                            projectsDiv.innerHTML = `✅ Projects found: ${projectsSnapshot.size}`;
+                            
+                            if (projectsSnapshot.size === 0) {
+                                projectsDiv.innerHTML += '<br>📝 No projects found - this is normal for new users';
+                            }
+                        } catch (firestoreError) {
+                            projectsDiv.innerHTML = `❌ Firestore error: ${firestoreError.message}`;
                         }
-                    } catch (firestoreError) {
-                        projectsDiv.innerHTML = `❌ Firestore error: ${firestoreError.message}`;
+                    } else {
+                        userDiv.innerHTML = '❌ No user authenticated - please log in first';
+                        projectsDiv.innerHTML = '💡 Go to <a href="/login.html">login page</a> to authenticate';
                     }
-                } else {
-                    userDiv.innerHTML = '❌ No user authenticated';
-                }
+                });
                 
             } catch (error) {
                 statusDiv.innerHTML = `❌ Error: ${error.message}`;
