@@ -1417,11 +1417,17 @@ function resolveCellReference(reference) {
 
 /**
  * Use selected generations in the current cell
+ * Stores selected generations as references that will be used when the cell is run
  */
 function useSelectedGenerations() {
   const checkboxes = document.querySelectorAll('.generation-checkbox:checked');
   if (checkboxes.length === 0) {
     alert('Please select at least one generation to use.');
+    return;
+  }
+  
+  if (!currentModalCellId) {
+    alert('No cell is currently selected.');
     return;
   }
   
@@ -1434,26 +1440,42 @@ function useSelectedGenerations() {
     if (cell && cell.generations && cell.generations[generationNumber - 1]) {
       selectedGenerations.push({
         cellId: cellId,
-        generationNumber: generationNumber,
-        output: cell.generations[generationNumber - 1].output
+        generationNumber: generationNumber
       });
     }
   });
   
   if (selectedGenerations.length > 0) {
-    // Combine selected generations
-    const combinedOutput = selectedGenerations.map(gen => 
-      `Generation ${gen.generationNumber} from ${gen.cellId}:\n${gen.output}`
-    ).join('\n\n---\n\n');
+    // Store selected generations as references in the cell
+    if (!currentSheet.cells[currentModalCellId]) {
+      const defaultModel = getDefaultModel();
+      currentSheet.cells[currentModalCellId] = { 
+        prompt: '', 
+        output: '', 
+        model: defaultModel, 
+        temperature: 0.7, 
+        cellPrompt: '', 
+        autoRun: false,
+        selectedGenerations: []
+      };
+    }
     
-    // Update the current cell's prompt with the combined output
-    const modalPrompt = document.getElementById('modalPrompt');
-    modalPrompt.value = combinedOutput;
+    currentSheet.cells[currentModalCellId].selectedGenerations = selectedGenerations;
+    
+    // Save to database
+    if (currentSheet.id) {
+      const cell = currentSheet.cells[currentModalCellId];
+      saveCellToDatabase(currentModalCellId, cell.prompt, cell.output, cell.model, cell.temperature, cell.cellPrompt, cell.autoRun);
+    }
     
     // Clear selection
     clearGenerationSelection();
     
-    console.log('✅ Used selected generations:', selectedGenerations);
+    // Show success message
+    const generationRefs = selectedGenerations.map(gen => `${gen.cellId}-${gen.generationNumber}`).join(', ');
+    showSuccess(`Selected generations (${generationRefs}) will be used when this cell runs`);
+    
+    console.log('✅ Stored selected generation references:', selectedGenerations);
   }
 }
 
@@ -1757,6 +1779,23 @@ async function runCell(id, visited = new Set()) {
   console.log(`🔄 Dependencies found:`, deps);
   console.log(`🔄 Current sheet cells:`, Object.keys(currentSheet.cells));
   console.log(`🔄 All cells in current sheet:`, currentSheet.cells);
+  
+  // Add selected generations to the prompt if they exist
+  if (cell.selectedGenerations && cell.selectedGenerations.length > 0) {
+    console.log(`🔍 Cell ${id} has selected generations:`, cell.selectedGenerations);
+    const selectedGenerationsText = cell.selectedGenerations.map(genRef => {
+      const refCell = currentSheet.cells[genRef.cellId];
+      if (refCell && refCell.generations && refCell.generations[genRef.generationNumber - 1]) {
+        const generation = refCell.generations[genRef.generationNumber - 1];
+        return `Generation ${genRef.generationNumber} from ${genRef.cellId}:\n${generation.output}`;
+      }
+      return `[ERROR: Generation ${genRef.generationNumber} from ${genRef.cellId} not found]`;
+    }).join('\n\n---\n\n');
+    
+    // Prepend selected generations to the prompt
+    processedPrompt = `${selectedGenerationsText}\n\n${processedPrompt}`;
+    console.log(`✅ Added selected generations to prompt for ${id}`);
+  }
   
   // Debug each dependency resolution
   for (const depId of deps) {
