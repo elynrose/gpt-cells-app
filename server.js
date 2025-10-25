@@ -753,8 +753,10 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({
         FIREBASE_API_KEY: process.env.FIREBASE_API_KEY ? 'SET' : 'NOT SET',
         FIREBASE_API_KEY_VALUE: process.env.FIREBASE_API_KEY ? process.env.FIREBASE_API_KEY.substring(0, 10) + '...' : 'NOT SET',
+        FAL_AI_API_KEY: process.env.FAL_AI_API_KEY ? 'SET' : 'NOT SET',
+        OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY ? 'SET' : 'NOT SET',
         NODE_ENV: process.env.NODE_ENV,
-        allEnvKeys: Object.keys(process.env).filter(key => key.includes('FIREBASE'))
+        allEnvKeys: Object.keys(process.env).filter(key => key.includes('FIREBASE') || key.includes('FAL_AI') || key.includes('OPENROUTER'))
       }));
       return;
     }
