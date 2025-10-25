@@ -426,7 +426,7 @@
         }
 
         // Check authentication
-        authService.onAuthStateChanged((user) => {
+        auth.onAuthStateChanged((user) => {
             if (user) {
                 currentUser = user;
                 updateUserInterface(user);
