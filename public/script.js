@@ -554,8 +554,9 @@ function renderGrid() {
       console.log(`Rendering cell ${id} with content:`, cell.prompt);
       html += '<td>';
       const hasPrompt = cell.cellPrompt && cell.cellPrompt.trim() !== '';
+      const hasSelectedGenerations = cell.selectedGenerations && cell.selectedGenerations.length > 0;
       // Don't show required indicator in grid by default - only when cell is selected
-      html += '<div class="cell-container' + (hasPrompt ? ' has-prompt' : '') + '">';
+      html += '<div class="cell-container' + (hasPrompt ? ' has-prompt' : '') + (hasSelectedGenerations ? ' has-selected-generations' : '') + '">';
       html += '<button class="expand-btn" onclick="openModal(\'' + id + '\')" title="Expand cell">⛶</button>';
       html += '<textarea id="prompt-' + id + '" oninput="updatePrompt(\'' + id + '\')" onfocus="showOutput(\'' + id + '\')" onblur="hideCellControls(\'' + id + '\'); saveCellOnBlur(\'' + id + '\')" placeholder="Enter prompt...">' + (cell.prompt || '') + '</textarea>';
       html += '<div class="output" id="output-' + id + '"' + (cell.output ? ' style="display: block;"' : '') + '>';
@@ -1468,8 +1469,8 @@ function useSelectedGenerations() {
       saveCellToDatabase(currentModalCellId, cell.prompt, cell.output, cell.model, cell.temperature, cell.cellPrompt, cell.autoRun);
     }
     
-    // Clear selection
-    clearGenerationSelection();
+    // Highlight selected generations in the modal
+    highlightSelectedGenerations(selectedGenerations);
     
     // Show success message
     const generationRefs = selectedGenerations.map(gen => `${gen.cellId}-${gen.generationNumber}`).join(', ');
@@ -1480,12 +1481,39 @@ function useSelectedGenerations() {
 }
 
 /**
+ * Highlight selected generations in the modal
+ */
+function highlightSelectedGenerations(selectedGenerations) {
+  // Remove any existing highlights
+  document.querySelectorAll('.generation-log.highlighted').forEach(el => {
+    el.classList.remove('highlighted');
+  });
+  
+  // Add highlight to selected generations
+  selectedGenerations.forEach(genRef => {
+    const checkboxId = `gen-checkbox-${genRef.cellId}-${genRef.generationNumber}`;
+    const checkbox = document.getElementById(checkboxId);
+    if (checkbox) {
+      const generationLog = checkbox.closest('.generation-log');
+      if (generationLog) {
+        generationLog.classList.add('highlighted');
+      }
+    }
+  });
+}
+
+/**
  * Clear generation selection
  */
 function clearGenerationSelection() {
   const checkboxes = document.querySelectorAll('.generation-checkbox');
   checkboxes.forEach(checkbox => {
     checkbox.checked = false;
+  });
+  
+  // Remove highlights
+  document.querySelectorAll('.generation-log.highlighted').forEach(el => {
+    el.classList.remove('highlighted');
   });
 }
 
@@ -4701,6 +4729,13 @@ function openModal(cellId) {
     console.log(`🔍 Setting modalOutput.innerHTML with logsHTML length:`, logsHTML.length);
     modalOutput.innerHTML = logsHTML;
     console.log(`🔍 Modal output innerHTML set successfully`);
+    
+    // Highlight selected generations if they exist
+    if (cell.selectedGenerations && cell.selectedGenerations.length > 0) {
+      setTimeout(() => {
+        highlightSelectedGenerations(cell.selectedGenerations);
+      }, 100); // Small delay to ensure DOM is updated
+    }
   } else {
     console.log(`⚠️ Cell ${cellId} has no generations yet`);
     const noGenerationsHTML = `
