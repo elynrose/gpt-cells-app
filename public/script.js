@@ -1810,8 +1810,8 @@ async function runCell(id, visited = new Set()) {
   
   // Priority-based prompt processing:
   // 1. If selected generations exist, use them with the prompt
-  // 2. If no selected generations but cell has output, use cell output with prompt
-  // 3. If no selected generations and no cell output, just use the prompt
+  // 2. If no selected generations but cell has value, use cell value with prompt
+  // 3. If no selected generations and no cell value, just use the prompt
   
   if (cell.selectedGenerations && cell.selectedGenerations.length > 0) {
     console.log(`🔍 Cell ${id} has selected generations:`, cell.selectedGenerations);
@@ -1833,19 +1833,19 @@ async function runCell(id, visited = new Set()) {
       processedPrompt = selectedGenerationsText;
       console.log(`✅ Using selected generations as main content for ${id}`);
     }
-  } else if (cell.output && cell.output.trim() !== '' && cell.output !== 'No generations yet') {
-    console.log(`🔍 Cell ${id} has output but no selected generations, using cell output with prompt`);
-    // Use cell output with the prompt
+  } else if (cell.prompt && cell.prompt.trim() !== '') {
+    console.log(`🔍 Cell ${id} has cell value but no selected generations, using cell value with prompt`);
+    // Use cell value (original prompt) with the new prompt
     if (processedPrompt && processedPrompt.trim() !== '') {
-      processedPrompt = `${cell.output}\n\n${processedPrompt}`;
-      console.log(`✅ Using cell output with prompt for ${id}`);
+      processedPrompt = `${cell.prompt}\n\n${processedPrompt}`;
+      console.log(`✅ Using cell value with prompt for ${id}`);
     } else {
-      // If no prompt, use cell output as the main content
-      processedPrompt = cell.output;
-      console.log(`✅ Using cell output as main content for ${id}`);
+      // If no new prompt, use cell value as the main content
+      processedPrompt = cell.prompt;
+      console.log(`✅ Using cell value as main content for ${id}`);
     }
   } else {
-    console.log(`🔍 Cell ${id} has no selected generations and no output, using prompt only`);
+    console.log(`🔍 Cell ${id} has no selected generations and no cell value, using prompt only`);
   }
   
   // Debug each dependency resolution
