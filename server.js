@@ -447,6 +447,7 @@ async function makeAPIRequest(provider, endpoint, data = null, apiKey = null) {
       options.headers['Authorization'] = `Bearer ${finalApiKey}`;
     }
 
+    // Add timeout to prevent hanging requests
     const req = https.request(options, (res) => {
       console.log(`📡 API Response Status: ${res.statusCode}`);
       console.log(`📡 API Response Headers:`, res.headers);
@@ -497,11 +498,20 @@ async function makeAPIRequest(provider, endpoint, data = null, apiKey = null) {
       }
     });
 
+    // Set timeout to prevent hanging requests
+    req.setTimeout(30000, () => {
+      console.log(`⏰ Request timeout after 30 seconds`);
+      req.destroy();
+      reject(new Error('Request timeout - API did not respond within 30 seconds'));
+    });
+
     req.on('error', (error) => {
+      console.log(`❌ Request error:`, error.message);
       reject(error);
     });
 
     if (data) {
+      console.log(`📤 Sending request data:`, JSON.stringify(data).substring(0, 200) + '...');
       req.write(JSON.stringify(data));
     }
     req.end();
