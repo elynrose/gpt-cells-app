@@ -1170,6 +1170,12 @@ function updateAllCellModelDefaults() {
       }
     }
   });
+  
+  // Also update the modal model selector if it exists and doesn't have a specific model set
+  const modalModelSelect = document.getElementById('modalModel');
+  if (modalModelSelect && (!modalModelSelect.value || modalModelSelect.value === 'loading')) {
+    modalModelSelect.value = selectedModel;
+  }
 }
 
 /**
