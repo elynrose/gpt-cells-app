@@ -1101,6 +1101,45 @@
       transform: scale(1.1);
     }
 
+    /* Highlighted generation styling */
+    .generation-log.highlighted {
+      background-color: #e3f2fd !important;
+      border: 2px solid #2196f3 !important;
+      border-radius: 8px !important;
+      box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3) !important;
+      position: relative;
+    }
+
+    .generation-log.highlighted::before {
+      content: "✓ SELECTED";
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #2196f3;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: bold;
+      z-index: 10;
+    }
+
+    /* Cell with selected generations indicator */
+    .cell-container.has-selected-generations {
+      border-left: 4px solid #2196f3 !important;
+      background: linear-gradient(90deg, rgba(33, 150, 243, 0.1) 0%, transparent 100%) !important;
+    }
+
+    .cell-container.has-selected-generations::after {
+      content: "📋";
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 12px;
+      opacity: 0.7;
+      z-index: 5;
+    }
+
     /* Column sorting controls */
     .column-sort-controls {
       position: absolute;
