@@ -423,6 +423,8 @@ async function makeAPIRequest(provider, endpoint, data = null, apiKey = null) {
     }
 
     const url = new URL(config.baseUrl + endpoint);
+    console.log(`🌐 Making API request to: ${url.toString()}`);
+    console.log(`🔑 Using API key: ${finalApiKey ? finalApiKey.substring(0, 10) + '...' : 'NOT SET'}`);
     
     // Check if this is a TTS request (audio endpoint)
     const isAudioRequest = endpoint === '/audio/speech';
@@ -626,6 +628,7 @@ async function callHybridAI(model, prompt, temperature = 0.7) {
       
       // Convert sanitized model ID back to original format for OpenRouter
       const originalModelId = await getOriginalModelId(model);
+      console.log(`🤖 Text generation - Original model ID: ${originalModelId}`);
       
       // Text generation via OpenRouter
       const response = await makeAPIRequest('openrouter', '/chat/completions', {
