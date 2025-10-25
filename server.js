@@ -759,26 +759,19 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Firebase configuration endpoint - serve the actual firebase-config.js file
+    // Firebase configuration endpoint
     if (req.url === '/firebase-config.js') {
-      const filePath = path.join(publicDir, 'firebase-config.js');
-      fs.readFile(filePath, (err, content) => {
-        if (err) {
-          res.statusCode = 404;
-          res.setHeader('Content-Type', 'text/plain');
-          res.end('Firebase config not found');
-          return;
-        }
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/javascript');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.end(content);
-      });
-      return;
-    }
-
-    // Rate limiting for API endpoints
-    if (req.url.startsWith('/api/') && !checkRateLimit(clientIP)) {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      
+      const firebaseApiKey = process.env.FIREBASE_API_KEY || 'AIzaSyA63ET1bNMnxY3ZVmnaa8FCUuvkMOVls5k';
+      console.log('🔧 Firebase API Key from env:', process.env.FIREBASE_API_KEY ? 'SET' : 'NOT SET');
+      console.log('🔧 Using API Key:', firebaseApiKey.substring(0, 10) + '...');
+      console.log('🔧 Full API Key for debugging:', firebaseApiKey);
+      console.log('🔧 Railway deployment test - latest code');
+      
+      const config = `// Firebase configuration and initialization
 // Using compat version for browser compatibility
 // Updated: 2025-01-24 - Dynamic API key from environment
 
