@@ -37,6 +37,70 @@ let numCols = currentSheet.numCols;
 let availableModels = [];
 
 /**
+ * Load available models from the server
+ */
+async function loadAvailableModels() {
+  try {
+    console.log('🔄 Loading available models...');
+    const response = await fetch('https://gpt-cells-app-production.up.railway.app/api/models');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    availableModels = data.models || [];
+    
+    console.log('✅ Loaded models:', availableModels.length);
+    
+    // Populate the model selector
+    populateModelSelector();
+    
+  } catch (error) {
+    console.error('❌ Error loading models:', error);
+    availableModels = [];
+    populateModelSelector(); // Still populate with empty state
+  }
+}
+
+/**
+ * Populate the model selector dropdown
+ */
+function populateModelSelector() {
+  const modelSelect = document.getElementById('model-select');
+  if (!modelSelect) {
+    console.warn('⚠️ Model selector not found');
+    return;
+  }
+  
+  // Clear existing options
+  modelSelect.innerHTML = '';
+  
+  if (availableModels.length === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'No models available';
+    modelSelect.appendChild(option);
+    return;
+  }
+  
+  // Add models to selector
+  availableModels.forEach(model => {
+    const option = document.createElement('option');
+    option.value = model.id;
+    option.textContent = model.name;
+    modelSelect.appendChild(option);
+  });
+  
+  // Set default selection to first model
+  if (availableModels.length > 0) {
+    modelSelect.value = availableModels[0].id;
+  }
+  
+  console.log('✅ Model selector populated with', availableModels.length, 'models');
+}
+
+/**
  * Get the default model for new cells
  * Priority: Main selector (current selection) > Project default model > Hardcoded fallback
  */
@@ -5522,3 +5586,13 @@ window.forceAdminStatus = function() {
   isAdmin = true;
   checkAdminStatus();
 };
+
+// Initialize the application when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🚀 Initializing GPT Cells App...');
+  
+  // Load available models
+  loadAvailableModels();
+  
+  console.log('✅ App initialization complete');
+});
