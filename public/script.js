@@ -56,10 +56,14 @@ async function loadAvailableModels() {
     // Populate the model selector
     populateModelSelector();
     
+    // Also populate the modal model selector
+    populateModalModelSelector();
+    
   } catch (error) {
     console.error('❌ Error loading models:', error);
     availableModels = [];
     populateModelSelector(); // Still populate with empty state
+    populateModalModelSelector(); // Also populate modal with empty state
   }
 }
 
@@ -98,6 +102,43 @@ function populateModelSelector() {
   }
   
   console.log('✅ Model selector populated with', availableModels.length, 'models');
+}
+
+/**
+ * Populate the modal model selector dropdown
+ */
+function populateModalModelSelector() {
+  const modalModelSelect = document.getElementById('modalModel');
+  if (!modalModelSelect) {
+    console.warn('⚠️ Modal model selector not found');
+    return;
+  }
+  
+  // Clear existing options
+  modalModelSelect.innerHTML = '';
+  
+  if (availableModels.length === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'No models available';
+    modalModelSelect.appendChild(option);
+    return;
+  }
+  
+  // Add models to modal selector
+  availableModels.forEach(model => {
+    const option = document.createElement('option');
+    option.value = model.id;
+    option.textContent = model.name;
+    modalModelSelect.appendChild(option);
+  });
+  
+  // Set default selection to first model
+  if (availableModels.length > 0) {
+    modalModelSelect.value = availableModels[0].id;
+  }
+  
+  console.log('✅ Modal model selector populated with', availableModels.length, 'models');
 }
 
 /**
