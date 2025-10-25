@@ -557,8 +557,8 @@ async function getOriginalModelId(sanitizedId) {
       } else if (sanitizedId.startsWith('stability-ai-')) {
         return `stability-ai/${parts.slice(2).join('-')}`;
       } else if (sanitizedId.startsWith('gpt-') || sanitizedId.startsWith('tts-')) {
-        // These are OpenAI models without provider prefix
-        return sanitizedId;
+        // These are OpenAI models without provider prefix - add openai/ prefix for OpenRouter
+        return `openai/${sanitizedId}`;
       } else if (sanitizedId.startsWith('dall-e-')) {
         // DALL-E models are not supported by Fal.ai
         return sanitizedId;
