@@ -2920,7 +2920,6 @@ async function initializeApp() {
     
     // Load data from Firestore
     await loadProjectsFromDatabase();
-    // loadAvailableModels(); // Removed - only use server API
     
     // Grid is already rendered by loadProjectsFromDatabase()
     updateSheetTabs();
@@ -3682,82 +3681,6 @@ function loadSheetsFromLocalStorage() {
 }
 
 
-/**
- * Load available models from the API
- */
-async function loadAvailableModels() {
-  try {
-    console.log('Loading available models from Firestore...');
-    
-    // Get models from Firestore (check status field first)
-    let modelsSnapshot = await db.collection('models').where('status', '==', 'active').get();
-    
-    // If no models found with status field, fallback to isActive field for backward compatibility
-    if (modelsSnapshot.empty) {
-      console.log('No models found with status field, checking isActive field...');
-      modelsSnapshot = await db.collection('models').where('isActive', '==', true).get();
-    }
-    
-    const models = [];
-    modelsSnapshot.forEach(doc => {
-      const modelData = doc.data();
-      models.push({
-        id: modelData.id,
-        originalId: modelData.originalId || modelData.id, // Use originalId for API calls, fallback to id
-        name: modelData.name,
-        type: modelData.type,
-        provider: modelData.provider,
-        description: modelData.description,
-        maxTokens: modelData.maxTokens,
-        costPer1kTokens: modelData.costPer1kTokens
-      });
-    });
-    
-    console.log('Found models from Firestore:', models.length);
-    availableModels = models; // Store globally
-    window.availableModels = models; // Also store on window for access
-    updateModelSelector(models);
-    
-  } catch (error) {
-    console.error('Error loading models from Firestore:', error);
-    
-    // Fallback to server API if Firestore fails
-    try {
-      console.log('Falling back to server API...');
-      
-      // Get Firebase ID token for authentication
-      const tokenResult = await authService.getIdToken();
-      if (!tokenResult.success) {
-        console.error('Authentication required for models API');
-        return;
-      }
-
-      const response = await fetch('https://gpt-cells-app-production.up.railway.app/api/models', {
-        headers: {
-          'Authorization': `Bearer ${tokenResult.token}`
-        }
-      });
-      const data = await response.json();
-      
-      if (data.models && data.models.length > 0) {
-        console.log('Found models from server:', data.models.length);
-        availableModels = data.models; // Store globally
-        window.availableModels = data.models; // Also store on window for access
-        updateModelSelector(data.models);
-      } else {
-        console.log('No models found in server response');
-        availableModels = [];
-        window.availableModels = [];
-        updateModelSelector([]);
-      }
-    } catch (fallbackError) {
-      console.error('Server API failed:', fallbackError);
-      availableModels = [];
-      window.availableModels = [];
-      updateModelSelector([]);
-    }
-  }
-}
 
 /**
  * Populate all cell model selectors with available models
