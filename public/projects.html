@@ -592,21 +592,16 @@
                     updatedAt: new Date()
                 };
                 
-                const result = await firestoreService.createProject(currentUser.uid, projectData);
+                const projectRef = await db.collection('users').doc(currentUser.uid).collection('projects').add(projectData);
                 
-                if (result.success) {
-                    console.log('✅ Project created successfully:', result.projectId);
-                    showSuccess('Project created successfully!');
-                    
-                    // Clear the input
-                    projectNameInput.value = '';
-                    
-                    // Redirect to the new project
-                    window.location.href = `/app.html?project=${result.projectId}`;
-                } else {
-                    console.error('❌ Failed to create project:', result.error);
-                    showError('Failed to create project: ' + result.error);
-                }
+                console.log('✅ Project created successfully:', projectRef.id);
+                showSuccess('Project created successfully!');
+                
+                // Clear the input
+                projectNameInput.value = '';
+                
+                // Redirect to the new project
+                window.location.href = `/app.html?project=${projectRef.id}`;
             } catch (error) {
                 console.error('❌ Error creating project:', error);
                 showError('Failed to create project. Please try again.');
@@ -645,17 +640,12 @@
                 try {
                     console.log('🗑️ Deleting project:', projectId);
                     
-                    const result = await firestoreService.deleteProject(currentUser.uid, projectId);
+                    await db.collection('users').doc(currentUser.uid).collection('projects').doc(projectId).delete();
                     
-                    if (result.success) {
-                        console.log('✅ Project deleted successfully');
-                        showSuccess('Project deleted successfully!');
-                        // Reload projects to update the UI
-                        await loadProjects();
-                    } else {
-                        console.error('❌ Failed to delete project:', result.error);
-                        alert('Failed to delete project: ' + result.error);
-                    }
+                    console.log('✅ Project deleted successfully');
+                    showSuccess('Project deleted successfully!');
+                    // Reload projects to update the UI
+                    await loadProjects();
                 } catch (error) {
                     console.error('❌ Error deleting project:', error);
                     alert('Failed to delete project. Please try again.');
