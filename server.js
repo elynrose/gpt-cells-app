@@ -448,6 +448,9 @@ async function makeAPIRequest(provider, endpoint, data = null, apiKey = null) {
     }
 
     const req = https.request(options, (res) => {
+      console.log(`📡 API Response Status: ${res.statusCode}`);
+      console.log(`📡 API Response Headers:`, res.headers);
+      
       if (isAudioRequest) {
         // Handle binary audio data
         const chunks = [];
@@ -457,6 +460,7 @@ async function makeAPIRequest(provider, endpoint, data = null, apiKey = null) {
         res.on('end', () => {
           if (res.statusCode >= 400) {
             const errorData = Buffer.concat(chunks).toString();
+            console.log(`❌ API Error ${res.statusCode}: ${errorData}`);
             reject(new Error(`API Error ${res.statusCode}: ${errorData.substring(0, 200)}`));
             return;
           }
@@ -473,15 +477,20 @@ async function makeAPIRequest(provider, endpoint, data = null, apiKey = null) {
           responseData += chunk;
         });
         res.on('end', () => {
+          console.log(`📡 API Response Data: ${responseData.substring(0, 500)}...`);
+          
           if (res.statusCode >= 400) {
+            console.log(`❌ API Error ${res.statusCode}: ${responseData}`);
             reject(new Error(`API Error ${res.statusCode}: ${responseData.substring(0, 200)}`));
             return;
           }
           
           try {
             const parsed = JSON.parse(responseData);
+            console.log(`✅ API Success:`, parsed);
             resolve(parsed);
           } catch (error) {
+            console.log(`❌ JSON Parse Error:`, error.message);
             reject(new Error(`Invalid JSON response: ${responseData.substring(0, 200)}`));
           }
         });
@@ -946,14 +955,19 @@ const server = http.createServer(async (req, res) => {
         const model = data.model || 'gpt-3.5-turbo';
         const temperature = data.temperature || 0.7;
         
+        console.log(`🚀 API Request - Model: ${model}, Prompt: ${prompt.substring(0, 50)}...`);
         
         // Call Hybrid AI API (Fal.ai for images, OpenRouter for text)
         const responseText = await callHybridAI(model, prompt, temperature);
+        
+        console.log(`✅ AI Generation Success - Response: ${responseText.substring(0, 100)}...`);
         
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ text: responseText }));
       } catch (err) {
+        console.log(`❌ AI Generation Error:`, err.message);
+        console.log(`❌ Error Stack:`, err.stack);
         // Handle different types of errors gracefully
         let errorMessage = 'An error occurred while processing your request';
         let statusCode = 500;
