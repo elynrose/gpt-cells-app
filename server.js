@@ -34,6 +34,9 @@ let availableModels = [];
 let modelsCacheTime = 0;
 const CACHE_DURATION = parseInt(process.env.CACHE_DURATION) || 5 * 60 * 1000; // 5 minutes
 
+// Circuit breaker for API requests
+let apiRequestInProgress = false;
+
 // Database setup
 const dbPath = process.env.DATABASE_URL || path.join(__dirname, 'spreadsheet.db');
 let db;
@@ -960,6 +963,18 @@ const server = http.createServer(async (req, res) => {
     });
     req.on('end', async () => {
       try {
+        // Circuit breaker - prevent multiple concurrent API requests
+        if (apiRequestInProgress) {
+          console.log(`🚫 API request already in progress, rejecting new request`);
+          res.statusCode = 429;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: 'API request already in progress. Please wait.' }));
+          return;
+        }
+        
+        apiRequestInProgress = true;
+        console.log(`🔒 Circuit breaker: API request started`);
+        
         const data = JSON.parse(body || '{}');
         const prompt = data.prompt || '';
         const model = data.model || 'gpt-3.5-turbo';
@@ -975,9 +990,18 @@ const server = http.createServer(async (req, res) => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ text: responseText }));
+        
+        // Reset circuit breaker on success
+        apiRequestInProgress = false;
+        console.log(`🔓 Circuit breaker: API request completed successfully`);
       } catch (err) {
         console.log(`❌ AI Generation Error:`, err.message);
         console.log(`❌ Error Stack:`, err.stack);
+        
+        // Reset circuit breaker on error
+        apiRequestInProgress = false;
+        console.log(`🔓 Circuit breaker: API request failed, resetting`);
+        
         // Handle different types of errors gracefully
         let errorMessage = 'An error occurred while processing your request';
         let statusCode = 500;
