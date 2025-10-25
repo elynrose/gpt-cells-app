@@ -2283,7 +2283,7 @@
         
         if (currentSheet && currentSheet.id) {
           // Update the sheet name in Firestore
-          await firestoreService.updateSheet(userId, projectId, currentSheet.id, {
+          await db.collection('users').doc(userId).collection('projects').doc(projectId).collection('sheets').doc(currentSheet.id).update({
             name: title,
             updatedAt: new Date()
           });
