@@ -2925,6 +2925,10 @@ async function initializeApp() {
     updateSheetTabs();
     
     console.log('GPT Cells application initialized successfully');
+    
+    // Load available models
+    loadAvailableModels();
+    
     showSuccess('Application loaded successfully!');
   } catch (error) {
     console.error('Error initializing grid:', error);
@@ -5510,12 +5514,4 @@ window.forceAdminStatus = function() {
   checkAdminStatus();
 };
 
-// Initialize the application when the page loads
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Initializing GPT Cells App...');
-  
-  // Load available models
-  loadAvailableModels();
-  
-  console.log('✅ App initialization complete - Models should be loading now!');
-});
+// Model loading is now handled in initializeApp() function
