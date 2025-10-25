@@ -5594,5 +5594,5 @@ document.addEventListener('DOMContentLoaded', function() {
   // Load available models
   loadAvailableModels();
   
-  console.log('✅ App initialization complete');
+  console.log('✅ App initialization complete - Models should be loading now!');
 });
