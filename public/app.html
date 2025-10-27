@@ -15,7 +15,7 @@
       margin: 0;
       padding: 0 0 60px 0; /* Add bottom padding for fixed sheet navigation */
       background-color: #ffffff;
-      color: #333;
+      color: #000000;
       overflow-x: hidden;
     }
 
@@ -26,7 +26,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      border-bottom: 1px solid #000000;
     }
 
     .project-title {
@@ -95,12 +95,11 @@
 
     .controls {
       background-color: #ffffff;
-      border-bottom: 1px solid #e5e5e5;
+      border-bottom: 1px solid #000000;
       padding: 15px 20px;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -112,14 +111,14 @@
       align-items: center;
       gap: 5px;
       font-weight: 500;
-      color: #495057;
+      color: #000000;
     }
 
     .controls select,
     .controls input {
       padding: 6px 10px;
-      border: 1px solid #ced4da;
-      border-radius: 4px;
+      border: 1px solid #000000;
+      border-radius: 0;
       font-size: 14px;
       background-color: white;
     }
@@ -127,16 +126,16 @@
     .controls select:focus,
     .controls input:focus {
       outline: none;
-      border-color: #007bff;
-      box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+      border-color: #000000;
+      box-shadow: none;
     }
 
     .controls button {
       padding: 8px 16px;
       background-color: #000000;
       color: white;
-      border: none;
-      border-radius: 4px;
+      border: 1px solid #000000;
+      border-radius: 0;
       cursor: pointer;
       font-size: 14px;
       font-weight: 500;
@@ -144,22 +143,22 @@
     }
 
     .controls button:hover {
-      background-color: #333333;
-      transform: translateY(-1px);
+      background-color: #ffffff;
+      color: #000000;
     }
 
     .controls button:active {
-      transform: translateY(1px);
+      background-color: #000000;
+      color: #ffffff;
     }
 
     .grid-container {
       max-height: calc(100vh - 180px);
       overflow: auto;
       background-color: white;
-      border: 1px solid #e5e5e5;
-      border-radius: 8px;
+      border: 1px solid #000000;
+      border-radius: 0;
       margin: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       min-height: 300px;
     }
 
@@ -174,7 +173,7 @@
 
     th,
     td {
-      border: 1px solid #f0f0f0;
+      border: 1px solid #000000;
       padding: 0;
       vertical-align: top;
       min-width: 100px;
@@ -183,13 +182,13 @@
     }
 
     th {
-      background: #f8f9fa;
+      background: #ffffff;
       font-weight: 600;
       color: #000000;
       text-align: center;
       padding: 8px 4px;
-      border-bottom: 1px solid #f0f0f0;
-      border-right: 1px solid #f0f0f0;
+      border-bottom: 1px solid #000000;
+      border-right: 1px solid #000000;
       position: sticky;
       z-index: 10;
     }
@@ -198,8 +197,8 @@
       position: sticky;
       left: 0;
       z-index: 20;
-      background: linear-gradient(180deg, #e1e4e8 0%, #d0d7de 100%);
-      border-right: 2px solid #d0d7de;
+      background: #ffffff;
+      border-right: 2px solid #000000;
       min-width: 50px;
     }
 
@@ -209,7 +208,7 @@
     }
 
     td:hover {
-      background-color: #f6f8fa;
+      background-color: #f8f8f8;
     }
 
     .cell-container {
@@ -238,8 +237,8 @@
       min-width: 80px;
       padding: 2px 4px;
       font-size: 11px;
-      border: 1px solid #ccc;
-      border-radius: 3px;
+      border: 1px solid #000000;
+      border-radius: 0;
       background: white;
     }
 
@@ -247,7 +246,7 @@
       width: 50px;
       padding: 2px 4px;
       font-size: 11px;
-      border: 1px solid #ccc;
+      border: 1px solid #000000;
       border-radius: 3px;
       text-align: center;
     }
@@ -255,16 +254,17 @@
     .cell-run-btn {
       padding: 2px 6px;
       font-size: 11px;
-      background: #007bff;
+      background: #000000;
       color: white;
-      border: none;
-      border-radius: 3px;
+      border: 1px solid #000000;
+      border-radius: 0;
       cursor: pointer;
       transition: background-color 0.2s;
     }
 
     .cell-run-btn:hover {
-      background: #0056b3;
+      background: #ffffff;
+      color: #000000;
     }
 
     .cell-auto-run-label {
@@ -272,7 +272,7 @@
       align-items: center;
       gap: 2px;
       font-size: 10px;
-      color: #6c757d;
+      color: #000000;
       cursor: pointer;
       white-space: nowrap;
     }
@@ -284,17 +284,17 @@
 
     .auto-run-text {
       font-size: 9px;
-      color: #6c757d;
+      color: #000000;
     }
 
     .prompt-help {
       margin-top: 5px;
-      color: #6c757d;
+      color: #000000;
     }
 
     .prompt-help small {
       font-size: 11px;
-      color: #6c757d;
+      color: #000000;
     }
 
     .auto-run-settings {
@@ -306,7 +306,7 @@
       align-items: center;
       gap: 8px;
       font-size: 14px;
-      color: #495057;
+      color: #000000;
       cursor: pointer;
       margin-bottom: 8px;
     }
@@ -318,12 +318,12 @@
 
     .auto-run-help {
       margin-top: 5px;
-      color: #6c757d;
+      color: #000000;
     }
 
     .auto-run-help small {
       font-size: 11px;
-      color: #6c757d;
+      color: #000000;
     }
 
     .output-content {
@@ -335,15 +335,15 @@
       gap: 4px;
       align-items: center;
       padding: 4px;
-      background: #f8f9fa;
-      border-top: 1px solid #e9ecef;
+      background: #f8f8f8;
+      border-top: 1px solid #000000;
       border-radius: 0 0 4px 4px;
     }
 
     .cell-model-select {
       font-size: 11px;
       padding: 2px 4px;
-      border: 1px solid #ccc;
+      border: 1px solid #000000;
       border-radius: 3px;
       background: white;
       min-width: 80px;
@@ -352,7 +352,7 @@
     .cell-temp-input {
       font-size: 11px;
       padding: 2px 4px;
-      border: 1px solid #ccc;
+      border: 1px solid #000000;
       border-radius: 3px;
       width: 45px;
       text-align: center;
@@ -361,16 +361,17 @@
     .cell-run-btn {
       font-size: 11px;
       padding: 2px 6px;
-      border: 1px solid #007bff;
-      border-radius: 3px;
-      background: #007bff;
+      border: 1px solid #000000;
+      border-radius: 0;
+      background: #000000;
       color: white;
       cursor: pointer;
       min-width: 25px;
     }
 
     .cell-run-btn:hover {
-      background: #0056b3;
+      background: #ffffff;
+      color: #000000;
     }
 
     textarea {
@@ -379,7 +380,7 @@
       resize: none;
       font-size: 12px;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      border: 1px solid #d0d7de;
+      border: 1px solid #000000;
       border-radius: 3px;
       padding: 4px;
       background-color: white;
@@ -388,8 +389,8 @@
 
     textarea:focus {
       outline: none;
-      border-color: #007bff;
-      box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+      border-color: #000000;
+      box-shadow: none;
     }
 
     .output {
@@ -398,14 +399,14 @@
       left: 0;
       right: 0;
       background-color: #ffffff;
-      border: 1px solid #007bff;
-      border-radius: 4px;
+      border: 1px solid #000000;
+      border-radius: 0;
       padding: 8px;
       white-space: pre-wrap;
       font-size: 11px;
       max-height: 120px;
       overflow-y: auto;
-      color: #495057;
+      color: #000000;
       line-height: 1.4;
       display: none;
       z-index: 1000;
@@ -475,10 +476,10 @@
       align-items: center;
       justify-content: center;
       height: 100px;
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      border: 2px dashed #dee2e6;
+      background: #f8f8f8;
+      border: 2px dashed #000000;
       border-radius: 4px;
-      color: #6c757d;
+      color: #000000;
       font-size: 12px;
       font-style: italic;
       margin: 4px 0;
@@ -560,8 +561,8 @@
       right: 2px;
       width: 6px;
       height: 6px;
-      background-color: #28a745;
-      border-radius: 50%;
+      background-color: #000000;
+      border-radius: 0;
       z-index: 10;
     }
 
@@ -573,8 +574,8 @@
       right: 2px;
       width: 6px;
       height: 6px;
-      background-color: #dc3545;
-      border-radius: 50%;
+      background-color: #000000;
+      border-radius: 0;
       z-index: 10;
     }
 
@@ -591,14 +592,14 @@
       left: 0;
       right: 0;
       height: 1px;
-      background-color: #007bff;
+      background-color: #000000;
     }
 
 
     .row-header {
       position: sticky;
       left: 0;
-      background: linear-gradient(180deg, #e1e4e8 0%, #d0d7de 100%);
+      background: #ffffff;
       z-index: 15;
       width: 50px;
       min-width: 50px;
@@ -611,7 +612,7 @@
     }
 
     .row-header:hover {
-      background: linear-gradient(180deg, #d0d7de 0%, #c1c8d1 100%);
+      background: #f8f8f8;
     }
 
     .column-header {
@@ -620,7 +621,7 @@
     }
 
     .column-header:hover {
-      background: linear-gradient(180deg, #d0d7de 0%, #c1c8d1 100%) !important;
+      background: #f8f8f8 !important;
     }
 
     /* Column header content styling */
@@ -643,7 +644,7 @@
     .column-alias {
       cursor: pointer;
       font-weight: 600;
-      color: #333;
+      color: #000000;
       transition: color 0.2s ease;
       padding: 2px 4px;
       border-radius: 3px;
@@ -664,7 +665,7 @@
       font-weight: 600;
       text-align: center;
       background: white;
-      color: #333;
+      color: #000000;
       min-width: 60px;
       max-width: 120px;
     }
@@ -787,38 +788,38 @@
 
     /* Cell selection effect */
     .cell-selected {
-      background-color: #e3f2fd !important;
-      border: 2px solid #2196f3 !important;
+      background-color: #f8f8f8 !important;
+      border: 2px solid #000000 !important;
     }
 
     /* Row highlighting */
     .row-highlighted {
-      background-color: #fff3cd !important;
+      background-color: #f8f8f8 !important;
     }
 
     .row-highlighted td {
-      background-color: #fff3cd !important;
+      background-color: #f8f8f8 !important;
     }
 
     /* Column highlighting */
     .column-highlighted {
-      background-color: #d1ecf1 !important;
+      background-color: #f8f8f8 !important;
     }
 
     .column-highlighted td {
-      background-color: #d1ecf1 !important;
+      background-color: #f8f8f8 !important;
     }
 
     /* Header highlighting */
     .header-highlighted {
-      background: linear-gradient(180deg, #007bff 0%, #0056b3 100%) !important;
+      background: #000000 !important;
       color: white !important;
       font-weight: 700 !important;
     }
 
     /* Combined row and column highlighting */
     .row-highlighted.column-highlighted td {
-      background-color: #cce5ff !important;
+      background-color: #f8f8f8 !important;
     }
 
     /* Sheet tabs styling - Fixed at bottom */
@@ -829,12 +830,11 @@
       right: 0;
       display: flex;
       background-color: #ffffff;
-      border-top: 1px solid #e5e5e5;
+      border-top: 1px solid #000000;
       padding: 0 20px;
       overflow-x: auto;
       min-height: 40px;
       align-items: center;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
       z-index: 1000;
     }
 
@@ -843,8 +843,8 @@
       align-items: center;
       padding: 8px 16px;
       margin-right: 2px;
-      background-color: #f8f9fa;
-      border: 1px solid #e5e5e5;
+      background-color: #ffffff;
+      border: 1px solid #000000;
       border-bottom: none;
       cursor: pointer;
       user-select: none;
@@ -854,7 +854,7 @@
     }
 
     .sheet-tab:hover {
-      background-color: #e9ecef;
+      background-color: #f8f8f8;
     }
 
     .sheet-name {
@@ -875,52 +875,54 @@
 
     .sheet-name:focus {
       background-color: white;
-      box-shadow: 0 0 0 2px #007bff;
-      border: 1px solid #007bff;
+      box-shadow: 0 0 0 2px #000000;
+      border: 1px solid #000000;
     }
 
     .sheet-tab.active {
-      background-color: white;
-      border-bottom: 1px solid white;
+      background-color: #000000;
+      color: #ffffff;
+      border-bottom: 1px solid #000000;
       z-index: 10;
     }
 
     .sheet-name {
       flex: 1;
       font-size: 13px;
-      color: #495057;
+      color: #000000;
     }
 
     .sheet-close {
       margin-left: 8px;
-      color: #6c757d;
+      color: #000000;
       font-size: 16px;
       line-height: 1;
       padding: 2px 4px;
-      border-radius: 2px;
+      border-radius: 0;
       transition: background-color 0.2s;
     }
 
     .sheet-close:hover {
-      background-color: #dc3545;
-      color: white;
+      background-color: #000000;
+      color: #ffffff;
     }
 
     .add-sheet-btn {
       padding: 8px 12px;
       background-color: #000000;
       color: white;
-      border: none;
+      border: 1px solid #000000;
       cursor: pointer;
       font-size: 16px;
       font-weight: bold;
       margin-left: 8px;
-      border-radius: 4px;
+      border-radius: 0;
       transition: background-color 0.2s;
     }
 
     .add-sheet-btn:hover {
-      background-color: #333333;
+      background-color: #ffffff;
+      color: #000000;
     }
 
     /* Modal styling */
@@ -932,7 +934,7 @@
       top: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
+      background-color: rgba(0, 0, 0, 0.8);
       backdrop-filter: blur(2px);
     }
 
@@ -940,12 +942,12 @@
       background-color: white;
       margin: 5% auto;
       padding: 0;
-      border-radius: 8px;
+      border-radius: 0;
       width: 90%;
       max-width: 800px;
       max-height: 80vh;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      border: 1px solid #000000;
       animation: modalSlideIn 0.3s ease-out;
     }
 
@@ -987,7 +989,8 @@
     }
 
     .close:hover {
-      background-color: rgba(255, 255, 255, 0.2);
+      background-color: #ffffff;
+      color: #000000;
     }
 
     .modal-body {
@@ -1003,7 +1006,7 @@
     .modal-section label {
       display: block;
       font-weight: 600;
-      color: #495057;
+      color: #000000;
       margin-bottom: 8px;
       font-size: 14px;
     }
@@ -1012,8 +1015,8 @@
       width: 100%;
       min-height: 120px;
       padding: 12px;
-      border: 2px solid #e9ecef;
-      border-radius: 6px;
+      border: 1px solid #000000;
+      border-radius: 0;
       font-size: 14px;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       resize: vertical;
@@ -1022,14 +1025,14 @@
 
     .modal-section textarea:focus {
       outline: none;
-      border-color: #007bff;
-      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+      border-color: #000000;
+      box-shadow: none;
     }
 
     .modal-output {
-      background-color: #f8f9fa;
-      border: 2px solid #e9ecef;
-      border-radius: 6px;
+      background-color: #ffffff;
+      border: 1px solid #000000;
+      border-radius: 0;
       padding: 12px;
       min-height: 200px;
       max-height: 400px;
@@ -1037,9 +1040,9 @@
       font-size: 14px;
       line-height: 1.5;
       white-space: pre-wrap;
-      color: #495057;
+      color: #000000;
       scrollbar-width: thin;
-      scrollbar-color: #007bff #e9ecef;
+      scrollbar-color: #000000 #ffffff;
     }
 
     .modal-output::-webkit-scrollbar {
@@ -1047,17 +1050,17 @@
     }
 
     .modal-output::-webkit-scrollbar-track {
-      background: #e9ecef;
-      border-radius: 4px;
+      background: #ffffff;
+      border-radius: 0;
     }
 
     .modal-output::-webkit-scrollbar-thumb {
-      background: #007bff;
-      border-radius: 4px;
+      background: #000000;
+      border-radius: 0;
     }
 
     .modal-output::-webkit-scrollbar-thumb:hover {
-      background: #0056b3;
+      background: #333333;
     }
 
     .modal-output img {
@@ -1103,10 +1106,10 @@
 
     /* Highlighted generation styling */
     .generation-log.highlighted {
-      background-color: #e3f2fd !important;
-      border: 2px solid #2196f3 !important;
+      background-color: #f8f8f8 !important;
+      border: 2px solid #000000 !important;
       border-radius: 8px !important;
-      box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3) !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
       position: relative;
     }
 
@@ -1115,7 +1118,7 @@
       position: absolute;
       top: -8px;
       right: -8px;
-      background: #2196f3;
+      background: #000000;
       color: white;
       padding: 2px 8px;
       border-radius: 12px;
@@ -1126,8 +1129,8 @@
 
     /* Cell with selected generations indicator */
     .cell-container.has-selected-generations {
-      border-left: 4px solid #2196f3 !important;
-      background: linear-gradient(90deg, rgba(33, 150, 243, 0.1) 0%, transparent 100%) !important;
+      border-left: 4px solid #000000 !important;
+      background: #f8f8f8 !important;
     }
 
     .cell-container.has-selected-generations::after {
@@ -1205,7 +1208,7 @@
     }
 
     .column-resize-handle:hover {
-      background: #007bff;
+      background: #000000;
     }
 
     .row-resize-handle {
@@ -1220,13 +1223,13 @@
     }
 
     .row-resize-handle:hover {
-      background: #007bff;
+      background: #000000;
     }
 
     /* Resize indicators */
     .resize-indicator {
       position: absolute;
-      background: #007bff;
+      background: #000000;
       z-index: 1000;
       pointer-events: none;
     }
@@ -1245,7 +1248,7 @@
       max-height: 350px;
       overflow-y: auto;
       scrollbar-width: thin;
-      scrollbar-color: #007bff #e9ecef;
+      scrollbar-color: #000000 #ffffff;
     }
 
     .generation-logs::-webkit-scrollbar {
@@ -1253,30 +1256,30 @@
     }
 
     .generation-logs::-webkit-scrollbar-track {
-      background: #e9ecef;
-      border-radius: 3px;
+      background: #ffffff;
+      border-radius: 0;
     }
 
     .generation-logs::-webkit-scrollbar-thumb {
-      background: #007bff;
-      border-radius: 3px;
+      background: #000000;
+      border-radius: 0;
     }
 
     .generation-logs::-webkit-scrollbar-thumb:hover {
-      background: #0056b3;
+      background: #333333;
     }
 
     .generation-log {
       margin-bottom: 15px;
       padding: 10px;
-      border: 1px solid #e9ecef;
+      border: 1px solid #000000;
       border-radius: 6px;
       background-color: #ffffff;
     }
 
     .generation-log.latest {
-      background-color: #f8f9fa;
-      border-color: #007bff;
+      background-color: #f8f8f8;
+      border-color: #000000;
     }
 
     .generation-checkbox {
@@ -1284,7 +1287,7 @@
     }
 
     .generation-checkbox:checked {
-      accent-color: #007bff;
+      accent-color: #000000;
     }
 
     .generation-content {
@@ -1338,7 +1341,7 @@
       align-items: center;
       margin-bottom: 8px;
       font-weight: 500;
-      color: #495057;
+      color: #000000;
     }
     
     /* Required field styling in modal */
@@ -1376,8 +1379,8 @@
     .modal-section input[type="range"] {
       width: 100%;
       padding: 8px 12px;
-      border: 2px solid #e9ecef;
-      border-radius: 6px;
+      border: 1px solid #000000;
+      border-radius: 0;
       font-size: 14px;
       background-color: white;
       transition: border-color 0.2s, box-shadow 0.2s;
@@ -1386,49 +1389,50 @@
     .modal-section select:focus,
     .modal-section input[type="range"]:focus {
       outline: none;
-      border-color: #007bff;
-      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+      border-color: #000000;
+      box-shadow: none;
     }
 
     .modal-section input[type="range"] {
       padding: 0;
       height: 6px;
-      background: #e9ecef;
-      border-radius: 3px;
+      background: #ffffff;
+      border: 1px solid #000000;
+      border-radius: 0;
     }
 
     .modal-section input[type="range"]::-webkit-slider-thumb {
       appearance: none;
       width: 20px;
       height: 20px;
-      background: #007bff;
-      border-radius: 50%;
+      background: #000000;
+      border-radius: 0;
       cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      box-shadow: none;
     }
 
     .modal-section input[type="range"]::-moz-range-thumb {
       width: 20px;
       height: 20px;
-      background: #007bff;
-      border-radius: 50%;
+      background: #000000;
+      border-radius: 0;
       cursor: pointer;
       border: none;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      box-shadow: none;
     }
 
     #modalTempValue {
       display: inline-block;
       margin-left: 10px;
       font-weight: 600;
-      color: #007bff;
+      color: #000000;
       min-width: 30px;
     }
 
     .modal-footer {
-      background-color: #f8f9fa;
+      background-color: #ffffff;
       padding: 20px;
-      border-top: 1px solid #e9ecef;
+      border-top: 1px solid #000000;
       display: flex;
       gap: 12px;
       justify-content: flex-end;
@@ -1436,8 +1440,8 @@
 
     .modal-footer button {
       padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
+      border: 1px solid #000000;
+      border-radius: 0;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
@@ -1451,8 +1455,8 @@
     }
 
     .run-button:hover {
-      background-color: #333333;
-      transform: translateY(-1px);
+      background-color: #ffffff;
+      color: #000000;
     }
 
     .save-button {
@@ -1461,18 +1465,18 @@
     }
 
     .save-button:hover {
-      background-color: #333333;
-      transform: translateY(-1px);
+      background-color: #ffffff;
+      color: #000000;
     }
 
     .cancel-button {
-      background-color: #6c757d;
-      color: white;
+      background-color: #ffffff;
+      color: #000000;
     }
 
     .cancel-button:hover {
-      background-color: #5a6268;
-      transform: translateY(-1px);
+      background-color: #000000;
+      color: #ffffff;
     }
 
     /* Expand button in cells */
@@ -1482,10 +1486,10 @@
       right: 2px;
       width: 16px;
       height: 16px;
-      background-color: #007bff;
+      background-color: #000000;
       color: white;
-      border: none;
-      border-radius: 3px;
+      border: 1px solid #000000;
+      border-radius: 0;
       cursor: pointer;
       font-size: 10px;
       font-weight: bold;
@@ -1502,8 +1506,8 @@
     }
 
     .expand-btn:hover {
-      background-color: #0056b3;
-      transform: scale(1.1);
+      background-color: #ffffff;
+      color: #000000;
     }
 
     /* Notification animations */
@@ -1545,7 +1549,7 @@
       height: 20px;
       margin: -10px 0 0 -10px;
       border: 2px solid #f3f3f3;
-      border-top: 2px solid #007bff;
+      border-top: 2px solid #000000;
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
@@ -1557,48 +1561,48 @@
 
     /* Enhanced cell states */
     .cell-container.processing {
-      background-color: #f8f9fa;
-      border: 1px solid #007bff;
+      background-color: #f8f8f8;
+      border: 1px solid #000000;
     }
 
     .cell-container.error {
-      background-color: #f8d7da;
-      border: 1px solid #dc3545;
+      background-color: #f8f8f8;
+      border: 1px solid #000000;
     }
 
     .cell-container.success {
-      background-color: #d4edda;
-      border: 1px solid #28a745;
+      background-color: #f8f8f8;
+      border: 1px solid #000000;
     }
 
     .cell-container.model-updated {
-      background-color: #e3f2fd;
-      border: 2px solid #2196f3;
+      background-color: #f8f8f8;
+      border: 2px solid #000000;
       animation: modelUpdatePulse 0.6s ease-in-out;
     }
 
     @keyframes modelUpdatePulse {
       0% { 
-        background-color: #e3f2fd;
-        border-color: #2196f3;
+        background-color: #f8f8f8;
+        border-color: #000000;
         transform: scale(1);
       }
       50% { 
-        background-color: #bbdefb;
-        border-color: #1976d2;
+        background-color: #ffffff;
+        border-color: #000000;
         transform: scale(1.02);
       }
       100% { 
-        background-color: #e3f2fd;
-        border-color: #2196f3;
+        background-color: #f8f8f8;
+        border-color: #000000;
         transform: scale(1);
       }
     }
 
     /* Dependency execution states */
     .cell-container.processing {
-      background-color: #fff3cd;
-      border: 2px solid #ffc107;
+      background-color: #f8f8f8;
+      border: 2px solid #000000;
       animation: pulse 1.5s ease-in-out infinite;
     }
 
@@ -1612,14 +1616,14 @@
     .help-section {
       margin-bottom: 20px;
       padding: 15px;
-      background-color: #f8f9fa;
-      border-radius: 6px;
-      border-left: 4px solid #007bff;
+      background-color: #f8f8f8;
+      border-radius: 0;
+      border-left: 4px solid #000000;
     }
 
     .help-section h4 {
       margin: 0 0 10px 0;
-      color: #495057;
+      color: #000000;
       font-size: 16px;
     }
 
@@ -1645,7 +1649,7 @@
     }
 
     .user-dropdown a:hover {
-      background-color: #f8f9fa;
+      background-color: #f8f8f8;
     }
 
     /* Profile Modal Styles */
@@ -1654,10 +1658,10 @@
     }
 
     .profile-section h3 {
-      color: #495057;
+      color: #000000;
       margin-bottom: 15px;
       font-size: 1.2rem;
-      border-bottom: 2px solid #e9ecef;
+      border-bottom: 2px solid #000000;
       padding-bottom: 8px;
     }
 
@@ -1671,15 +1675,15 @@
 
     .profile-field label {
       font-weight: 600;
-      color: #495057;
+      color: #000000;
     }
 
     .profile-field span {
-      color: #6c757d;
+      color: #000000;
     }
 
     .plan-badge {
-      background: linear-gradient(135deg, #28a745, #20c997);
+      background: #000000;
       color: white;
       padding: 4px 12px;
       border-radius: 20px;
@@ -1694,35 +1698,35 @@
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #007bff, #0056b3);
+      background: #000000;
       color: white;
-      border: none;
+      border: 1px solid #000000;
       padding: 10px 20px;
-      border-radius: 6px;
+      border-radius: 0;
       cursor: pointer;
       font-weight: 600;
       transition: all 0.2s ease;
     }
 
     .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+      background: #ffffff;
+      color: #000000;
     }
 
     .btn-secondary {
-      background: linear-gradient(135deg, #6c757d, #495057);
-      color: white;
-      border: none;
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #000000;
       padding: 10px 20px;
-      border-radius: 6px;
+      border-radius: 0;
       cursor: pointer;
       font-weight: 600;
       transition: all 0.2s ease;
     }
 
     .btn-secondary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(108,117,125,0.3);
+      background: #000000;
+      color: #ffffff;
     }
 
     /* Settings Modal Styles */
@@ -1731,10 +1735,10 @@
     }
 
     .settings-section h3 {
-      color: #495057;
+      color: #000000;
       margin-bottom: 15px;
       font-size: 1.2rem;
-      border-bottom: 2px solid #e9ecef;
+      border-bottom: 2px solid #000000;
       padding-bottom: 8px;
     }
 
@@ -1748,7 +1752,7 @@
 
     .setting-item label {
       font-weight: 600;
-      color: #495057;
+      color: #000000;
       flex: 1;
     }
 
@@ -1774,10 +1778,10 @@
     }
 
     .usage-section h3 {
-      color: #495057;
+      color: #000000;
       margin-bottom: 15px;
       font-size: 1.2rem;
-      border-bottom: 2px solid #e9ecef;
+      border-bottom: 2px solid #000000;
       padding-bottom: 8px;
     }
 
@@ -1789,7 +1793,7 @@
     }
 
     .stat-item {
-      background: #f8f9fa;
+      background: #f8f8f8;
       padding: 15px;
       border-radius: 8px;
       display: flex;
@@ -1799,13 +1803,13 @@
 
     .stat-label {
       font-weight: 600;
-      color: #495057;
+      color: #000000;
     }
 
     .stat-value {
       font-size: 1.2rem;
       font-weight: 700;
-      color: #007bff;
+      color: #000000;
     }
 
     .limit-item {
@@ -1815,14 +1819,14 @@
     .limit-label {
       display: block;
       font-weight: 600;
-      color: #495057;
+      color: #000000;
       margin-bottom: 8px;
     }
 
     .limit-bar {
       width: 100%;
       height: 8px;
-      background-color: #e9ecef;
+      background-color: #f8f8f8;
       border-radius: 4px;
       overflow: hidden;
       margin-bottom: 5px;
@@ -1830,13 +1834,13 @@
 
     .limit-fill {
       height: 100%;
-      background: linear-gradient(90deg, #28a745, #20c997);
+      background: #000000;
       transition: width 0.3s ease;
     }
 
     .limit-text {
       font-size: 0.9rem;
-      color: #6c757d;
+      color: #000000;
     }
 
     .help-section ul {
@@ -1850,7 +1854,7 @@
     }
 
     .help-section code {
-      background-color: #e9ecef;
+      background-color: #f8f8f8;
       padding: 2px 6px;
       border-radius: 3px;
       font-family: 'Courier New', monospace;
@@ -1858,11 +1862,11 @@
     }
 
     .help-section kbd {
-      background-color: #f8f9fa;
-      border: 1px solid #dee2e6;
+      background-color: #f8f8f8;
+      border: 1px solid #000000;
       border-radius: 3px;
       box-shadow: 0 1px 0 rgba(0,0,0,0.2);
-      color: #495057;
+      color: #000000;
       display: inline-block;
       font-size: 11px;
       font-weight: 700;
@@ -1925,35 +1929,35 @@
     </label>
     <button onclick="runAll()">Run All</button>
     <button onclick="clearAll()">Clear All</button>
-    <button onclick="clearAllHighlighting()" style="background-color: #6c757d;">Clear Highlighting</button>
+    <button onclick="clearAllHighlighting()" style="background-color: #000000;">Clear Highlighting</button>
     <div style="margin-left: 15px; display: inline-flex; gap: 5px;">
-      <button onclick="insertRow(0)" style="background-color: #28a745; font-size: 12px; padding: 4px 8px;">+ Row</button>
-      <button onclick="insertColumn(0)" style="background-color: #28a745; font-size: 12px; padding: 4px 8px;">+ Column</button>
-      <button onclick="deleteRow(0)" style="background-color: #dc3545; font-size: 12px; padding: 4px 8px;">- Row</button>
-      <button onclick="deleteColumn(0)" style="background-color: #dc3545; font-size: 12px; padding: 4px 8px;">- Column</button>
+      <button onclick="insertRow(0)" style="background-color: #000000; font-size: 12px; padding: 4px 8px;">+ Row</button>
+      <button onclick="insertColumn(0)" style="background-color: #000000; font-size: 12px; padding: 4px 8px;">+ Column</button>
+      <button onclick="deleteRow(0)" style="background-color: #000000; font-size: 12px; padding: 4px 8px;">- Row</button>
+      <button onclick="deleteColumn(0)" style="background-color: #000000; font-size: 12px; padding: 4px 8px;">- Column</button>
     </div>
     <div style="margin-left: 15px; display: inline-flex; gap: 5px;">
-      <button onclick="undo()" style="background-color: #ffc107; font-size: 12px; padding: 4px 8px;">Undo</button>
-      <button onclick="redo()" style="background-color: #17a2b8; font-size: 12px; padding: 4px 8px;">Redo</button>
+      <button onclick="undo()" style="background-color: #000000; font-size: 12px; padding: 4px 8px;">Undo</button>
+      <button onclick="redo()" style="background-color: #000000; font-size: 12px; padding: 4px 8px;">Redo</button>
     </div>
-    <button onclick="showHelp()" style="background-color: #6f42c1; font-size: 12px; padding: 4px 8px; margin-left: 15px;">❓ Help</button>
+    <button onclick="showHelp()" style="background-color: #000000; font-size: 12px; padding: 4px 8px; margin-left: 15px;">❓ Help</button>
     <div class="user-controls" style="margin-left: auto;">
       <div class="user-menu" id="userMenu">
-        <button class="user-button" onclick="toggleUserMenu()" style="background-color: #17a2b8; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+        <button class="user-button" onclick="toggleUserMenu()" style="background-color: #000000; color: white; border: 1px solid #000000; padding: 8px 16px; border-radius: 0; cursor: pointer; display: flex; align-items: center; gap: 8px;">
           <span id="userEmail">Loading...</span>
           <span class="user-arrow">▼</span>
         </button>
-        <div class="user-dropdown" id="userDropdown" style="display: none; position: absolute; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 1000; min-width: 150px; top: 100%; right: 0;">
-          <a href="#" onclick="showProfile()" style="display: block; padding: 10px 15px; text-decoration: none; color: #333; border-bottom: 1px solid #eee;">👤 Profile</a>
-          <a href="#" onclick="showSettings()" style="display: block; padding: 10px 15px; text-decoration: none; color: #333; border-bottom: 1px solid #eee;">⚙️ Settings</a>
-          <a href="#" onclick="showUsage()" style="display: block; padding: 10px 15px; text-decoration: none; color: #333; border-bottom: 1px solid #eee;">📊 Usage</a>
-          <a href="#" id="adminLink" onclick="window.open('/admin.html', '_blank')" style="display: none; padding: 10px 15px; text-decoration: none; color: #e74c3c; border-bottom: 1px solid #eee;">🛡️ Admin Dashboard</a>
+        <div class="user-dropdown" id="userDropdown" style="display: none; position: absolute; background: white; border: 1px solid #000000; border-radius: 0; box-shadow: none; z-index: 1000; min-width: 150px; top: 100%; right: 0;">
+          <a href="#" onclick="showProfile()" style="display: block; padding: 10px 15px; text-decoration: none; color: #000000; border-bottom: 1px solid #000000;">👤 Profile</a>
+          <a href="#" onclick="showSettings()" style="display: block; padding: 10px 15px; text-decoration: none; color: #000000; border-bottom: 1px solid #000000;">⚙️ Settings</a>
+          <a href="#" onclick="showUsage()" style="display: block; padding: 10px 15px; text-decoration: none; color: #000000; border-bottom: 1px solid #000000;">📊 Usage</a>
+          <a href="#" id="adminLink" onclick="window.open('/admin.html', '_blank')" style="display: none; padding: 10px 15px; text-decoration: none; color: #000000; border-bottom: 1px solid #000000;">🛡️ Admin Dashboard</a>
           <hr style="margin: 0;">
-          <a href="#" onclick="logout()" style="display: block; padding: 10px 15px; text-decoration: none; color: #dc3545;">🚪 Logout</a>
+          <a href="#" onclick="logout()" style="display: block; padding: 10px 15px; text-decoration: none; color: #000000;">🚪 Logout</a>
         </div>
       </div>
     </div>
-    <span id="cell-status" style="margin-left: 15px; font-weight: 500; color: #6c757d;">Click a cell to select</span>
+    <span id="cell-status" style="margin-left: 15px; font-weight: 500; color: #000000;">Click a cell to select</span>
   </div>
   <div class="grid-container">
   <div id="grid"></div>
