@@ -59,11 +59,28 @@ async function loadAvailableModels() {
     // Also populate the modal model selector
     populateModalModelSelector();
     
+    // Populate cell model selectors if grid is already rendered
+    if (typeof populateCellModelSelectors === 'function') {
+      console.log('Populating cell model selectors after models loaded');
+      populateCellModelSelectors(availableModels);
+      
+      // After populating, update all empty cells to use the current default model
+      setTimeout(() => {
+        updateAllCellModelDefaults();
+      }, 100);
+    }
+    
   } catch (error) {
     console.error('❌ Error loading models:', error);
     availableModels = [];
     populateModelSelector(); // Still populate with empty state
     populateModalModelSelector(); // Also populate modal with empty state
+    
+    // Also populate cell model selectors with empty state
+    if (typeof populateCellModelSelectors === 'function') {
+      console.log('Populating cell model selectors with empty state after error');
+      populateCellModelSelectors([]);
+    }
   }
 }
 
