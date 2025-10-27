@@ -3356,7 +3356,7 @@ async function logout() {
       const result = await authService.signOut();
       if (result.success) {
         showSuccess('Logged out successfully!');
-        window.location.href = '/auth.html';
+        window.location.href = '/';
       } else {
         showError('Failed to logout. Please try again.');
       }

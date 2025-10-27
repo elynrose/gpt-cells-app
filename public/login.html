@@ -277,24 +277,6 @@
             opacity: 0.8;
         }
 
-        .demo-credentials {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            margin-top: 20px;
-            text-align: left;
-        }
-
-        .demo-credentials h4 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .demo-credentials p {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-        }
     </style>
 </head>
 <body>
@@ -401,13 +383,6 @@
             </div>
         </div>
 
-        <!-- Demo Credentials -->
-        <div class="demo-credentials">
-            <h4>Demo Credentials</h4>
-            <p><strong>Email:</strong> demo@gptcells.com</p>
-            <p><strong>Password:</strong> demo123</p>
-            <p><em>Click "Sign In" to try the demo account</em></p>
-        </div>
     </div>
 
     <!-- Firebase CDN -->
@@ -632,13 +607,6 @@
         
         initializeAuth();
 
-        // Auto-fill demo credentials
-        document.getElementById('signInEmail').addEventListener('focus', function() {
-            if (this.value === '') {
-                this.value = 'demo@gptcells.com';
-                document.getElementById('signInPassword').value = 'demo123';
-            }
-        });
     </script>
     
     </div>

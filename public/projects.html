@@ -602,7 +602,7 @@
                 if (confirm('Are you sure you want to logout?')) {
                     const result = await authService.signOut();
                     if (result.success) {
-                        window.location.href = '/login.html';
+                        window.location.href = '/';
                     } else {
                         alert('Failed to logout. Please try again.');
                     }
