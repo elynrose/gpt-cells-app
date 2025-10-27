@@ -1431,6 +1431,61 @@
       min-width: 30px;
     }
 
+    /* Excel Formatting Controls */
+    .formatting-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .format-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .format-btn {
+      padding: 6px 12px;
+      border: 1px solid #000000;
+      background-color: #ffffff;
+      color: #000000;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+      border-radius: 0;
+      min-width: 32px;
+      height: 32px;
+    }
+
+    .format-btn:hover {
+      background-color: #000000;
+      color: #ffffff;
+    }
+
+    .format-btn.active {
+      background-color: #000000;
+      color: #ffffff;
+    }
+
+    .formatting-controls select {
+      padding: 6px 8px;
+      border: 1px solid #000000;
+      background-color: #ffffff;
+      color: #000000;
+      border-radius: 0;
+      font-size: 12px;
+      min-width: 80px;
+    }
+
+    .formatting-controls input[type="color"] {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #000000;
+      border-radius: 0;
+      cursor: pointer;
+    }
+
     .modal-footer {
       background-color: #ffffff;
       padding: 20px;
@@ -2001,6 +2056,37 @@
           <label for="modalTemperature">Temperature:</label>
           <input type="range" id="modalTemperature" min="0" max="2" step="0.1" value="0.7">
           <span id="modalTempValue">0.7</span>
+        </div>
+        
+        <!-- Excel Formatting Section -->
+        <div class="modal-section">
+          <label>Cell Formatting:</label>
+          <div class="formatting-controls">
+            <div class="format-row">
+              <button type="button" id="formatBold" class="format-btn" title="Bold">B</button>
+              <button type="button" id="formatItalic" class="format-btn" title="Italic">I</button>
+              <button type="button" id="formatUnderline" class="format-btn" title="Underline">U</button>
+            </div>
+            <div class="format-row">
+              <select id="formatAlign">
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+              <select id="formatNumber">
+                <option value="general">General</option>
+                <option value="number">Number</option>
+                <option value="currency">Currency</option>
+                <option value="percentage">Percentage</option>
+                <option value="date">Date</option>
+              </select>
+            </div>
+            <div class="format-row">
+              <input type="color" id="formatTextColor" value="#000000" title="Text Color">
+              <input type="color" id="formatBgColor" value="#ffffff" title="Background Color">
+              <button type="button" id="formatBorder" class="format-btn" title="Add Border">□</button>
+            </div>
+          </div>
         </div>
         <div class="modal-section">
           <label for="modalCellPrompt">Cell Prompt Template:</label>

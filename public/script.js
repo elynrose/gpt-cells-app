@@ -36,6 +36,356 @@ let numCols = currentSheet.numCols;
 // Available models
 let availableModels = [];
 
+// Excel formula support
+const EXCEL_FUNCTIONS = {
+  SUM: (...args) => args.reduce((sum, val) => sum + (parseFloat(val) || 0), 0),
+  AVERAGE: (...args) => {
+    const nums = args.filter(val => !isNaN(parseFloat(val)));
+    return nums.length > 0 ? nums.reduce((sum, val) => sum + parseFloat(val), 0) / nums.length : 0;
+  },
+  COUNT: (...args) => args.filter(val => !isNaN(parseFloat(val))).length,
+  MAX: (...args) => Math.max(...args.map(val => parseFloat(val) || -Infinity)),
+  MIN: (...args) => Math.min(...args.map(val => parseFloat(val) || Infinity)),
+  IF: (condition, trueVal, falseVal) => condition ? trueVal : falseVal,
+  CONCATENATE: (...args) => args.join(''),
+  LEN: (text) => String(text).length,
+  UPPER: (text) => String(text).toUpperCase(),
+  LOWER: (text) => String(text).toLowerCase(),
+  TRIM: (text) => String(text).trim(),
+  ROUND: (number, decimals = 0) => Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals),
+  ABS: (number) => Math.abs(number),
+  SQRT: (number) => Math.sqrt(number),
+  POWER: (base, exponent) => Math.pow(base, exponent)
+};
+
+/**
+ * Parse cell references (A1, B2, etc.) and return their values
+ */
+function parseCellReference(ref) {
+  const match = ref.match(/^([A-Z]+)(\d+)$/);
+  if (!match) return 0;
+  
+  const col = match[1];
+  const row = parseInt(match[2]) - 1; // Convert to 0-based
+  
+  // Convert column letter to number (A=0, B=1, etc.)
+  let colNum = 0;
+  for (let i = 0; i < col.length; i++) {
+    colNum = colNum * 26 + (col.charCodeAt(i) - 64);
+  }
+  colNum -= 1; // Convert to 0-based
+  
+  const cellId = String.fromCharCode(65 + colNum) + (row + 1);
+  const cell = currentSheet.cells[cellId];
+  
+  if (cell && cell.output) {
+    const value = cell.output.trim();
+    return isNaN(parseFloat(value)) ? value : parseFloat(value);
+  }
+  
+  return 0;
+}
+
+/**
+ * Parse cell ranges (A1:B2) and return their values
+ */
+function parseCellRange(range) {
+  const [start, end] = range.split(':');
+  const startMatch = start.match(/^([A-Z]+)(\d+)$/);
+  const endMatch = end.match(/^([A-Z]+)(\d+)$/);
+  
+  if (!startMatch || !endMatch) return [];
+  
+  const startCol = startMatch[1];
+  const startRow = parseInt(startMatch[2]);
+  const endCol = endMatch[1];
+  const endRow = parseInt(endMatch[2]);
+  
+  const values = [];
+  
+  // Convert column letters to numbers
+  const startColNum = startCol.charCodeAt(0) - 65;
+  const endColNum = endCol.charCodeAt(0) - 65;
+  
+  for (let row = startRow; row <= endRow; row++) {
+    for (let col = startColNum; col <= endColNum; col++) {
+      const cellId = String.fromCharCode(65 + col) + row;
+      const cell = currentSheet.cells[cellId];
+      if (cell && cell.output) {
+        const value = cell.output.trim();
+        values.push(isNaN(parseFloat(value)) ? value : parseFloat(value));
+      } else {
+        values.push(0);
+      }
+    }
+  }
+  
+  return values;
+}
+
+/**
+ * Parse Excel formula and evaluate it
+ */
+function parseFormula(formula) {
+  try {
+    // Remove the = sign
+    let expression = formula.substring(1);
+    
+    // Handle cell references (A1, B2, etc.)
+    expression = expression.replace(/([A-Z]+\d+)/g, (match) => {
+      return parseCellReference(match);
+    });
+    
+    // Handle cell ranges (A1:B2)
+    expression = expression.replace(/([A-Z]+\d+:[A-Z]+\d+)/g, (match) => {
+      const values = parseCellRange(match);
+      return `[${values.join(',')}]`;
+    });
+    
+    // Handle Excel functions
+    for (const [funcName, func] of Object.entries(EXCEL_FUNCTIONS)) {
+      const regex = new RegExp(`${funcName}\\(([^)]+)\\)`, 'gi');
+      expression = expression.replace(regex, (match, args) => {
+        const argValues = args.split(',').map(arg => {
+          arg = arg.trim();
+          // Handle array notation from ranges
+          if (arg.startsWith('[') && arg.endsWith(']')) {
+            return arg.slice(1, -1).split(',').map(v => parseFloat(v.trim()) || 0);
+          }
+          return parseFloat(arg) || arg;
+        });
+        
+        // Flatten arrays
+        const flatArgs = argValues.reduce((acc, val) => {
+          return acc.concat(Array.isArray(val) ? val : [val]);
+        }, []);
+        
+        return func(...flatArgs);
+      });
+    }
+    
+    // Evaluate the final expression
+    return eval(expression);
+  } catch (error) {
+    console.error('Formula parsing error:', error);
+    return '#ERROR';
+  }
+}
+
+/**
+ * Check if a cell value is a formula
+ */
+function isFormula(value) {
+  return typeof value === 'string' && value.startsWith('=');
+}
+
+/**
+ * Apply Excel formatting to a cell
+ */
+function applyCellFormatting(cellId, formatting) {
+  const cell = currentSheet.cells[cellId];
+  if (!cell) return;
+  
+  // Initialize formatting if it doesn't exist
+  if (!cell.formatting) {
+    cell.formatting = {
+      bold: false,
+      italic: false,
+      underline: false,
+      align: 'left',
+      numberFormat: 'general',
+      textColor: '#000000',
+      backgroundColor: '#ffffff',
+      border: false
+    };
+  }
+  
+  // Apply formatting
+  Object.assign(cell.formatting, formatting);
+  
+  // Update the cell display
+  updateCellDisplay(cellId);
+}
+
+/**
+ * Update cell display with formatting
+ */
+function updateCellDisplay(cellId) {
+  const cell = currentSheet.cells[cellId];
+  if (!cell || !cell.formatting) return;
+  
+  const textarea = document.getElementById(`prompt-${cellId}`);
+  const output = document.getElementById(`output-${cellId}`);
+  
+  if (textarea) {
+    // Apply formatting to textarea
+    textarea.style.fontWeight = cell.formatting.bold ? 'bold' : 'normal';
+    textarea.style.fontStyle = cell.formatting.italic ? 'italic' : 'normal';
+    textarea.style.textDecoration = cell.formatting.underline ? 'underline' : 'none';
+    textarea.style.textAlign = cell.formatting.align;
+    textarea.style.color = cell.formatting.textColor;
+    textarea.style.backgroundColor = cell.formatting.backgroundColor;
+    
+    if (cell.formatting.border) {
+      textarea.style.border = '2px solid #000000';
+    } else {
+      textarea.style.border = '1px solid transparent';
+    }
+  }
+  
+  if (output) {
+    // Apply formatting to output
+    output.style.fontWeight = cell.formatting.bold ? 'bold' : 'normal';
+    output.style.fontStyle = cell.formatting.italic ? 'italic' : 'normal';
+    output.style.textDecoration = cell.formatting.underline ? 'underline' : 'none';
+    output.style.textAlign = cell.formatting.align;
+    output.style.color = cell.formatting.textColor;
+    output.style.backgroundColor = cell.formatting.backgroundColor;
+    
+    if (cell.formatting.border) {
+      output.style.border = '2px solid #000000';
+    } else {
+      output.style.border = '1px solid #000000';
+    }
+    
+    // Apply number formatting
+    if (cell.output && cell.formatting.numberFormat !== 'general') {
+      output.textContent = formatNumber(cell.output, cell.formatting.numberFormat);
+    }
+  }
+}
+
+/**
+ * Format numbers according to Excel number formats
+ */
+function formatNumber(value, format) {
+  const num = parseFloat(value);
+  if (isNaN(num)) return value;
+  
+  switch (format) {
+    case 'number':
+      return num.toLocaleString();
+    case 'currency':
+      return '$' + num.toFixed(2);
+    case 'percentage':
+      return (num * 100).toFixed(2) + '%';
+    case 'date':
+      return new Date(num).toLocaleDateString();
+    default:
+      return value;
+  }
+}
+
+/**
+ * Load existing cell formatting into modal controls
+ */
+function loadCellFormatting(cellId) {
+  const cell = currentSheet.cells[cellId];
+  if (!cell || !cell.formatting) return;
+  
+  // Set current editing cell for formatting controls
+  currentEditingCell = cellId;
+  
+  // Load formatting values into controls
+  const formatBold = document.getElementById('formatBold');
+  const formatItalic = document.getElementById('formatItalic');
+  const formatUnderline = document.getElementById('formatUnderline');
+  const formatAlign = document.getElementById('formatAlign');
+  const formatNumber = document.getElementById('formatNumber');
+  const formatTextColor = document.getElementById('formatTextColor');
+  const formatBgColor = document.getElementById('formatBgColor');
+  const formatBorder = document.getElementById('formatBorder');
+  
+  if (formatBold) formatBold.classList.toggle('active', cell.formatting.bold);
+  if (formatItalic) formatItalic.classList.toggle('active', cell.formatting.italic);
+  if (formatUnderline) formatUnderline.classList.toggle('active', cell.formatting.underline);
+  if (formatAlign) formatAlign.value = cell.formatting.align;
+  if (formatNumber) formatNumber.value = cell.formatting.numberFormat;
+  if (formatTextColor) formatTextColor.value = cell.formatting.textColor;
+  if (formatBgColor) formatBgColor.value = cell.formatting.backgroundColor;
+  if (formatBorder) formatBorder.classList.toggle('active', cell.formatting.border);
+}
+
+/**
+ * Initialize formatting controls in modal
+ */
+function initializeFormattingControls() {
+  const formatBold = document.getElementById('formatBold');
+  const formatItalic = document.getElementById('formatItalic');
+  const formatUnderline = document.getElementById('formatUnderline');
+  const formatAlign = document.getElementById('formatAlign');
+  const formatNumber = document.getElementById('formatNumber');
+  const formatTextColor = document.getElementById('formatTextColor');
+  const formatBgColor = document.getElementById('formatBgColor');
+  const formatBorder = document.getElementById('formatBorder');
+  
+  if (!formatBold) return; // Controls not found
+  
+  // Bold button
+  formatBold.addEventListener('click', () => {
+    formatBold.classList.toggle('active');
+    const isActive = formatBold.classList.contains('active');
+    if (currentEditingCell) {
+      applyCellFormatting(currentEditingCell, { bold: isActive });
+    }
+  });
+  
+  // Italic button
+  formatItalic.addEventListener('click', () => {
+    formatItalic.classList.toggle('active');
+    const isActive = formatItalic.classList.contains('active');
+    if (currentEditingCell) {
+      applyCellFormatting(currentEditingCell, { italic: isActive });
+    }
+  });
+  
+  // Underline button
+  formatUnderline.addEventListener('click', () => {
+    formatUnderline.classList.toggle('active');
+    const isActive = formatUnderline.classList.contains('active');
+    if (currentEditingCell) {
+      applyCellFormatting(currentEditingCell, { underline: isActive });
+    }
+  });
+  
+  // Alignment
+  formatAlign.addEventListener('change', () => {
+    if (currentEditingCell) {
+      applyCellFormatting(currentEditingCell, { align: formatAlign.value });
+    }
+  });
+  
+  // Number format
+  formatNumber.addEventListener('change', () => {
+    if (currentEditingCell) {
+      applyCellFormatting(currentEditingCell, { numberFormat: formatNumber.value });
+    }
+  });
+  
+  // Text color
+  formatTextColor.addEventListener('change', () => {
+    if (currentEditingCell) {
+      applyCellFormatting(currentEditingCell, { textColor: formatTextColor.value });
+    }
+  });
+  
+  // Background color
+  formatBgColor.addEventListener('change', () => {
+    if (currentEditingCell) {
+      applyCellFormatting(currentEditingCell, { backgroundColor: formatBgColor.value });
+    }
+  });
+  
+  // Border
+  formatBorder.addEventListener('click', () => {
+    formatBorder.classList.toggle('active');
+    const isActive = formatBorder.classList.contains('active');
+    if (currentEditingCell) {
+      applyCellFormatting(currentEditingCell, { border: isActive });
+    }
+  });
+}
+
 /**
  * Load available models from the server
  */
@@ -613,6 +963,14 @@ function renderGrid() {
       }, 100); // Small delay to ensure selectors are populated
     } else {
       console.log('No models available for cell selectors yet');
+    }
+  }
+  
+  // Apply formatting to all cells after grid is rendered
+  for (let r = 0; r < numRows; r++) {
+    for (let c = 0; c < numCols; c++) {
+      const id = getCellId(c, r);
+      updateCellDisplay(id);
     }
   }
 }
@@ -1755,6 +2113,42 @@ async function runCell(id, visited = new Set()) {
     outDiv.textContent = 'Processing...';
     outDiv.style.color = '#6c757d';
     outDiv.style.fontStyle = 'italic';
+  }
+  
+  // Check if this is an Excel formula first
+  if (isFormula(cell.prompt)) {
+    console.log(`📊 Processing Excel formula for ${id}: ${cell.prompt}`);
+    try {
+      const result = parseFormula(cell.prompt);
+      cell.output = String(result);
+      
+      // Update the output display
+      if (outDiv) {
+        outDiv.textContent = cell.output;
+        outDiv.style.color = '#000000';
+        outDiv.style.fontStyle = 'normal';
+      }
+      
+      // Mark cell as processed
+      const cellContainer = document.querySelector(`#prompt-${id}`)?.closest('.cell-container');
+      if (cellContainer) {
+        cellContainer.classList.remove('processing');
+        cellContainer.classList.add('success');
+        setTimeout(() => cellContainer.classList.remove('success'), 2000);
+      }
+      
+      console.log(`✅ Excel formula result for ${id}: ${result}`);
+      return; // Exit early for formulas
+    } catch (error) {
+      console.error(`❌ Excel formula error for ${id}:`, error);
+      cell.output = '#ERROR';
+      if (outDiv) {
+        outDiv.textContent = '#ERROR';
+        outDiv.style.color = '#dc3545';
+        outDiv.style.fontStyle = 'normal';
+      }
+      return; // Exit early for formula errors
+    }
   }
   
   // Resolve dependencies (including cross-sheet references)
@@ -4612,6 +5006,7 @@ function redo() {
 
 // Modal functionality
 let currentModalCellId = null;
+let currentEditingCell = null;
 
 function openModal(cellId) {
   currentModalCellId = cellId;
@@ -4817,11 +5212,16 @@ function openModal(cellId) {
   document.getElementById('modalTemperature').addEventListener('input', function() {
     document.getElementById('modalTempValue').textContent = this.value;
   });
+  
+  // Initialize formatting controls and load existing formatting
+  initializeFormattingControls();
+  loadCellFormatting(cellId);
 }
 
 function closeModal() {
   document.getElementById('cellModal').style.display = 'none';
   currentModalCellId = null;
+  currentEditingCell = null;
 }
 
 function runModalCell() {
