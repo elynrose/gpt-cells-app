@@ -1121,7 +1121,7 @@ function showOutput(id) {
  * @param {string} id Cell identifier.
  */
 function hideCellControls(id) {
-  // Add a small delay to allow for clicking on the controls
+  // Add a longer delay to allow for clicking on the controls
   setTimeout(() => {
     const cellContainer = document.querySelector(`#prompt-${id}`)?.closest('.cell-container');
     if (cellContainer) {
@@ -1130,7 +1130,8 @@ function hideCellControls(id) {
       const isControlFocused = cellContainer.contains(focusedElement) && 
         (focusedElement.classList.contains('cell-model-select') || 
          focusedElement.classList.contains('cell-temp-input') || 
-         focusedElement.classList.contains('cell-run-btn'));
+         focusedElement.classList.contains('cell-run-btn') ||
+         focusedElement.classList.contains('cell-auto-run-checkbox'));
       
       if (!isControlFocused) {
         cellContainer.classList.remove('focused');
@@ -1138,7 +1139,7 @@ function hideCellControls(id) {
         cellContainer.classList.remove('cell-required');
       }
     }
-  }, 100);
+  }, 150); // Increased delay from 100ms to 150ms
 }
 
 /**
