@@ -147,9 +147,10 @@
       color: #000000;
     }
 
-    .controls button:active {
-      background-color: #000000;
-      color: #ffffff;
+    .controls button:focus {
+      background-color: #ffffff;
+      color: #000000;
+      outline: 2px solid #000000;
     }
 
     .grid-container {
@@ -788,26 +789,27 @@
 
     /* Cell selection effect */
     .cell-selected {
-      background-color: #f8f8f8 !important;
+      background-color: #000000 !important;
+      color: #ffffff !important;
       border: 2px solid #000000 !important;
     }
 
     /* Row highlighting */
     .row-highlighted {
-      background-color: #f8f8f8 !important;
+      background-color: #f0f0f0 !important;
     }
 
     .row-highlighted td {
-      background-color: #f8f8f8 !important;
+      background-color: #f0f0f0 !important;
     }
 
     /* Column highlighting */
     .column-highlighted {
-      background-color: #f8f8f8 !important;
+      background-color: #f0f0f0 !important;
     }
 
     .column-highlighted td {
-      background-color: #f8f8f8 !important;
+      background-color: #f0f0f0 !important;
     }
 
     /* Header highlighting */
@@ -886,10 +888,8 @@
       z-index: 10;
     }
 
-    .sheet-name {
-      flex: 1;
-      font-size: 13px;
-      color: #000000;
+    .sheet-tab.active .sheet-name {
+      color: #ffffff;
     }
 
     .sheet-close {
@@ -1454,9 +1454,15 @@
       color: white;
     }
 
-    .run-button:hover {
+    .modal-footer button:hover {
       background-color: #ffffff;
       color: #000000;
+    }
+
+    .modal-footer button:focus {
+      background-color: #ffffff;
+      color: #000000;
+      outline: 2px solid #000000;
     }
 
     .save-button {
