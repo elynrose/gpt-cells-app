@@ -925,21 +925,21 @@ function renderGrid() {
       // Don't show required indicator in grid by default - only when cell is selected
       html += '<div class="cell-container' + (hasPrompt ? ' has-prompt' : '') + (hasSelectedGenerations ? ' has-selected-generations' : '') + '">';
       html += '<button class="expand-btn" onclick="openModal(\'' + id + '\')" title="Expand cell">⛶</button>';
-      html += '<textarea id="prompt-' + id + '" oninput="updatePrompt(\'' + id + '\')" onfocus="showOutput(\'' + id + '\')" onblur="hideCellControls(\'' + id + '\'); saveCellOnBlur(\'' + id + '\')" placeholder="Enter prompt...">' + (cell.prompt || '') + '</textarea>';
+      html += '<textarea id="prompt-' + id + '" oninput="updatePrompt(\'' + id + '\')" onfocus="showOutput(\'' + id + '\')" placeholder="Enter prompt...">' + (cell.prompt || '') + '</textarea>';
       html += '<div class="output" id="output-' + id + '"' + (cell.output ? ' style="display: block;"' : '') + '>';
       html += '<button class="output-close-btn" onclick="closeOutput(\'' + id + '\'); event.stopPropagation();" title="Close output">&times;</button>';
       html += '<div class="output-content">' + (cell.output || '') + '</div>';
       html += '</div>';
       html += '<div class="cell-controls">';
-      html += '<select class="cell-model-select" id="model-' + id + '" onchange="updateCellModel(\'' + id + '\')" onfocus="keepCellControlsVisible(\'' + id + '\')">';
+      html += '<select class="cell-model-select" id="model-' + id + '" onchange="updateCellModel(\'' + id + '\')">';
       // Models will be populated by updateModelSelector after grid is rendered
       html += '</select>';
-      html += '<input type="number" class="cell-temp-input" id="temp-' + id + '" min="0" max="1" step="0.1" value="' + (cell.temperature || 0.7) + '" onchange="updateCellTemperature(\'' + id + '\')" onfocus="keepCellControlsVisible(\'' + id + '\')" title="Temperature">';
+      html += '<input type="number" class="cell-temp-input" id="temp-' + id + '" min="0" max="1" step="0.1" value="' + (cell.temperature || 0.7) + '" onchange="updateCellTemperature(\'' + id + '\')" title="Temperature">';
       html += '<label class="cell-auto-run-label" title="Auto-run when content changes or dependencies update">';
-      html += '<input type="checkbox" class="cell-auto-run-checkbox" id="auto-run-' + id + '" ' + (cell.autoRun ? 'checked' : '') + ' onchange="updateCellAutoRun(\'' + id + '\')" onfocus="keepCellControlsVisible(\'' + id + '\')">';
+      html += '<input type="checkbox" class="cell-auto-run-checkbox" id="auto-run-' + id + '" ' + (cell.autoRun ? 'checked' : '') + ' onchange="updateCellAutoRun(\'' + id + '\')">';
       html += '<span class="auto-run-text">Auto</span>';
       html += '</label>';
-      html += '<button class="cell-run-btn" onclick="runCell(\'' + id + '\')" onfocus="keepCellControlsVisible(\'' + id + '\')" title="Run this cell">▶</button>';
+      html += '<button class="cell-run-btn" onclick="runCell(\'' + id + '\')" title="Run this cell">▶</button>';
       html += '</div>';
       html += '</div>';
       html += '</td>';
@@ -972,6 +972,138 @@ function renderGrid() {
       const id = getCellId(c, r);
       updateCellDisplay(id);
     }
+  }
+  
+  // Set up improved event delegation for cell interactions
+  setupCellEventDelegation();
+}
+
+/**
+ * Set up improved event delegation for cell interactions
+ */
+function setupCellEventDelegation() {
+  const gridContainer = document.getElementById('grid');
+  if (!gridContainer) return;
+  
+  // Track which cell is currently active
+  let activeCellId = null;
+  let hideTimeout = null;
+  
+  // Handle focus events on cell elements
+  gridContainer.addEventListener('focusin', function(event) {
+    const target = event.target;
+    
+    // Find the cell container
+    const cellContainer = target.closest('.cell-container');
+    if (!cellContainer) return;
+    
+    // Extract cell ID from the container
+    const textarea = cellContainer.querySelector('textarea');
+    if (!textarea) return;
+    
+    const cellId = textarea.id.replace('prompt-', '');
+    
+    // Clear any pending hide timeout
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = null;
+    }
+    
+    // Show cell controls and set as active
+    cellContainer.classList.add('focused');
+    activeCellId = cellId;
+    
+    // Show output if textarea is focused
+    if (target === textarea) {
+      showOutput(cellId);
+    }
+  });
+  
+  // Handle blur events on cell elements
+  gridContainer.addEventListener('focusout', function(event) {
+    const target = event.target;
+    
+    // Find the cell container
+    const cellContainer = target.closest('.cell-container');
+    if (!cellContainer) return;
+    
+    // Extract cell ID from the container
+    const textarea = cellContainer.querySelector('textarea');
+    if (!textarea) return;
+    
+    const cellId = textarea.id.replace('prompt-', '');
+    
+    // Set a timeout to hide controls, but only if focus doesn't move to another element in the same cell
+    hideTimeout = setTimeout(() => {
+      // Check if focus moved to another element in the same cell
+      const activeElement = document.activeElement;
+      const isStillInCell = cellContainer.contains(activeElement);
+      
+      if (!isStillInCell) {
+        cellContainer.classList.remove('focused');
+        activeCellId = null;
+        
+        // Save cell content when leaving the cell
+        saveCellOnBlur(cellId);
+      }
+    }, 150); // Small delay to allow for dropdown interactions
+  });
+  
+  // Handle clicks on cell controls to keep them visible
+  gridContainer.addEventListener('mousedown', function(event) {
+    const target = event.target;
+    
+    // Check if clicking on cell controls
+    if (target.classList.contains('cell-model-select') ||
+        target.classList.contains('cell-temp-input') ||
+        target.classList.contains('cell-auto-run-checkbox') ||
+        target.classList.contains('cell-run-btn') ||
+        target.closest('.cell-auto-run-label')) {
+      
+      const cellContainer = target.closest('.cell-container');
+      if (cellContainer) {
+        // Clear any pending hide timeout
+        if (hideTimeout) {
+          clearTimeout(hideTimeout);
+          hideTimeout = null;
+        }
+        
+        // Ensure cell controls stay visible
+        cellContainer.classList.add('focused');
+        
+        // Extract cell ID and set as active
+        const textarea = cellContainer.querySelector('textarea');
+        if (textarea) {
+          const cellId = textarea.id.replace('prompt-', '');
+          activeCellId = cellId;
+        }
+      }
+    }
+  });
+}
+
+/**
+ * Save cell content when user leaves the cell
+ * @param {string} id Cell identifier.
+ */
+function saveCellOnBlur(id) {
+  const textarea = document.getElementById('prompt-' + id);
+  if (textarea) {
+    // Ensure cell exists in currentSheet.cells
+    if (!currentSheet.cells[id]) {
+      const defaultModel = getDefaultModel();
+      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false };
+    }
+    
+    // Update the cell's prompt
+    currentSheet.cells[id].prompt = textarea.value;
+    
+    // Save to Firestore if user is authenticated
+    if (currentUser && currentProject) {
+      saveSheetToFirestore();
+    }
+    
+    console.log(`💾 Saved cell ${id} content:`, textarea.value);
   }
 }
 
@@ -1474,42 +1606,6 @@ function showOutput(id) {
   }
 }
 
-/**
- * Hide cell controls when textarea loses focus
- * @param {string} id Cell identifier.
- */
-function hideCellControls(id) {
-  // Add a longer delay to allow for clicking on the controls
-  setTimeout(() => {
-    const cellContainer = document.querySelector(`#prompt-${id}`)?.closest('.cell-container');
-    if (cellContainer) {
-      // Check if any of the controls are focused
-      const focusedElement = document.activeElement;
-      const isControlFocused = cellContainer.contains(focusedElement) && 
-        (focusedElement.classList.contains('cell-model-select') || 
-         focusedElement.classList.contains('cell-temp-input') || 
-         focusedElement.classList.contains('cell-run-btn') ||
-         focusedElement.classList.contains('cell-auto-run-checkbox'));
-      
-      if (!isControlFocused) {
-        cellContainer.classList.remove('focused');
-        // Hide required indicator when cell loses focus
-        cellContainer.classList.remove('cell-required');
-      }
-    }
-  }, 150); // Increased delay from 100ms to 150ms
-}
-
-/**
- * Keep cell controls visible when they are focused
- * @param {string} id Cell identifier.
- */
-function keepCellControlsVisible(id) {
-  const cellContainer = document.querySelector(`#prompt-${id}`)?.closest('.cell-container');
-  if (cellContainer) {
-    cellContainer.classList.add('focused');
-  }
-}
 
 /**
  * Update all cell model selectors to use the main model selector's value as default
