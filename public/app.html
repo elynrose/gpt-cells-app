@@ -2479,22 +2479,40 @@
   
   <!-- Check for Firebase ready and hide loading indicator -->
   <script>
+    let checkCount = 0;
     (function checkFirebaseReady() {
+      checkCount++;
+      console.log(`🔍 Check #${checkCount} - Services available:`, {
+        auth: !!window.auth,
+        db: !!window.db,
+        authService: !!window.authService,
+        firestoreService: !!window.firestoreService,
+        storageService: !!window.storageService
+      });
+      
       if (window.auth && window.db && window.authService) {
         console.log('✅ Firebase is ready, hiding loading indicator');
         const loadingEl = document.getElementById('firebase-loading');
         const gridEl = document.getElementById('grid');
+        console.log('Loading element:', !!loadingEl, 'Grid element:', !!gridEl);
+        
         if (loadingEl && gridEl) {
           loadingEl.style.display = 'none';
           gridEl.style.display = 'block';
           console.log('✅ Loading indicator hidden, grid shown');
         } else {
-          console.log('Waiting for DOM elements...');
+          console.log('❌ Waiting for DOM elements...');
           setTimeout(checkFirebaseReady, 50);
         }
       } else {
-        console.log('Waiting for Firebase to initialize...');
-        setTimeout(checkFirebaseReady, 50);
+        if (checkCount < 100) { // Stop after 100 checks (5 seconds)
+          setTimeout(checkFirebaseReady, 50);
+        } else {
+          console.error('❌ Firebase services not available after 5 seconds');
+          console.log('window.auth:', window.auth);
+          console.log('window.db:', window.db);
+          console.log('window.authService:', window.authService);
+        }
       }
     })();
   </script>
