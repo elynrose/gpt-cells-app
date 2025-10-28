@@ -823,6 +823,10 @@ try {
   
   // Hide loading indicator and show grid (DOM is ready since script loads at end of page)
   console.log('🔍 Looking for loading elements...');
+  console.log('Document ready state:', document.readyState);
+  console.log('Document body exists:', !!document.body);
+  console.log('All divs with id:', document.querySelectorAll('div[id]').length);
+  
   const loadingEl = document.getElementById('firebase-loading');
   const gridEl = document.getElementById('grid');
   console.log('Loading element found:', !!loadingEl);
@@ -833,7 +837,22 @@ try {
     loadingEl.style.display = 'none';
     gridEl.style.display = 'block';
   } else {
-    console.log('❌ Elements not found - this should not happen since script loads at end of page');
+    console.log('❌ Elements not found - trying with setTimeout...');
+    setTimeout(() => {
+      console.log('Retry - Document ready state:', document.readyState);
+      const retryLoadingEl = document.getElementById('firebase-loading');
+      const retryGridEl = document.getElementById('grid');
+      console.log('Retry - Loading element found:', !!retryLoadingEl);
+      console.log('Retry - Grid element found:', !!retryGridEl);
+      
+      if (retryLoadingEl && retryGridEl) {
+        console.log('✅ Hiding loading indicator and showing grid (retry)');
+        retryLoadingEl.style.display = 'none';
+        retryGridEl.style.display = 'block';
+      } else {
+        console.log('❌ Still not found after retry');
+      }
+    }, 100);
   }
   
 } catch (error) {
@@ -849,6 +868,10 @@ try {
       
       // Hide loading indicator and show grid (retry)
       console.log('🔍 Looking for loading elements (retry)...');
+      console.log('Retry - Document ready state:', document.readyState);
+      console.log('Retry - Document body exists:', !!document.body);
+      console.log('Retry - All divs with id:', document.querySelectorAll('div[id]').length);
+      
       const loadingEl = document.getElementById('firebase-loading');
       const gridEl = document.getElementById('grid');
       console.log('Loading element found (retry):', !!loadingEl);
@@ -859,7 +882,16 @@ try {
         loadingEl.style.display = 'none';
         gridEl.style.display = 'block';
       } else {
-        console.log('❌ Elements not found (retry) - this should not happen since script loads at end of page');
+        console.log('❌ Elements not found (retry) - trying setTimeout...');
+        setTimeout(() => {
+          const retryLoadingEl = document.getElementById('firebase-loading');
+          const retryGridEl = document.getElementById('grid');
+          if (retryLoadingEl && retryGridEl) {
+            console.log('✅ Hiding loading indicator and showing grid (retry setTimeout)');
+            retryLoadingEl.style.display = 'none';
+            retryGridEl.style.display = 'block';
+          }
+        }, 100);
       }
       
     } catch (retryError) {
