@@ -756,8 +756,38 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Health check endpoint
-    if (req.url === '/health') {
+  // Debug endpoint - list files in public directory
+  if (req.url === '/debug-files') {
+    try {
+      const files = fs.readdirSync(publicDir);
+      const fileList = files.map(file => {
+        const stats = fs.statSync(path.join(publicDir, file));
+        return {
+          name: file,
+          size: stats.size,
+          isDirectory: stats.isDirectory(),
+          modified: stats.mtime
+        };
+      });
+      
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ 
+        publicDir,
+        files: fileList,
+        total: files.length 
+      }, null, 2));
+      return;
+    } catch (error) {
+      res.statusCode = 500;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: error.message }));
+      return;
+    }
+  }
+
+  // Health check endpoint
+  if (req.url === '/health') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Access-Control-Allow-Origin', '*');
