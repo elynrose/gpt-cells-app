@@ -827,6 +827,10 @@ try {
   console.log('Document body exists:', !!document.body);
   console.log('All divs with id:', document.querySelectorAll('div[id]').length);
   
+  // Debug: List all div IDs
+  const allDivs = document.querySelectorAll('div[id]');
+  console.log('All div IDs:', Array.from(allDivs).map(div => div.id));
+  
   const loadingEl = document.getElementById('firebase-loading');
   const gridEl = document.getElementById('grid');
   console.log('Loading element found:', !!loadingEl);
@@ -871,6 +875,10 @@ try {
       console.log('Retry - Document ready state:', document.readyState);
       console.log('Retry - Document body exists:', !!document.body);
       console.log('Retry - All divs with id:', document.querySelectorAll('div[id]').length);
+      
+      // Debug: List all div IDs
+      const allDivs = document.querySelectorAll('div[id]');
+      console.log('Retry - All div IDs:', Array.from(allDivs).map(div => div.id));
       
       const loadingEl = document.getElementById('firebase-loading');
       const gridEl = document.getElementById('grid');
