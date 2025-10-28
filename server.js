@@ -821,30 +821,19 @@ try {
   
   console.log('✅ Firebase initialized successfully from Railway');
   
-  // Hide loading indicator and show grid - wait for DOM to be ready
-  function hideLoadingWhenReady() {
-    console.log('🔍 Looking for loading elements...');
-    const loadingEl = document.getElementById('firebase-loading');
-    const gridEl = document.getElementById('grid');
-    console.log('Loading element found:', !!loadingEl);
-    console.log('Grid element found:', !!gridEl);
-    
-    if (loadingEl && gridEl) {
-      console.log('✅ Hiding loading indicator and showing grid');
-      loadingEl.style.display = 'none';
-      gridEl.style.display = 'block';
-    } else {
-      console.log('❌ Elements not ready yet, retrying in 100ms...');
-      setTimeout(hideLoadingWhenReady, 100);
-    }
-  }
+  // Hide loading indicator and show grid (DOM is ready since script loads at end of page)
+  console.log('🔍 Looking for loading elements...');
+  const loadingEl = document.getElementById('firebase-loading');
+  const gridEl = document.getElementById('grid');
+  console.log('Loading element found:', !!loadingEl);
+  console.log('Grid element found:', !!gridEl);
   
-  // Wait for DOM to be ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', hideLoadingWhenReady);
+  if (loadingEl && gridEl) {
+    console.log('✅ Hiding loading indicator and showing grid');
+    loadingEl.style.display = 'none';
+    gridEl.style.display = 'block';
   } else {
-    // DOM is already ready
-    setTimeout(hideLoadingWhenReady, 100);
+    console.log('❌ Elements not found - this should not happen since script loads at end of page');
   }
   
 } catch (error) {
@@ -858,30 +847,19 @@ try {
       storage = firebase.storage ? firebase.storage() : null;
       console.log('✅ Firebase initialized on retry from Railway');
       
-      // Hide loading indicator and show grid - wait for DOM to be ready
-      function hideLoadingWhenReadyRetry() {
-        console.log('🔍 Looking for loading elements (retry)...');
-        const loadingEl = document.getElementById('firebase-loading');
-        const gridEl = document.getElementById('grid');
-        console.log('Loading element found (retry):', !!loadingEl);
-        console.log('Grid element found (retry):', !!gridEl);
-        
-        if (loadingEl && gridEl) {
-          console.log('✅ Hiding loading indicator and showing grid (retry)');
-          loadingEl.style.display = 'none';
-          gridEl.style.display = 'block';
-        } else {
-          console.log('❌ Elements not ready yet, retrying in 100ms (retry)...');
-          setTimeout(hideLoadingWhenReadyRetry, 100);
-        }
-      }
+      // Hide loading indicator and show grid (retry)
+      console.log('🔍 Looking for loading elements (retry)...');
+      const loadingEl = document.getElementById('firebase-loading');
+      const gridEl = document.getElementById('grid');
+      console.log('Loading element found (retry):', !!loadingEl);
+      console.log('Grid element found (retry):', !!gridEl);
       
-      // Wait for DOM to be ready
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', hideLoadingWhenReadyRetry);
+      if (loadingEl && gridEl) {
+        console.log('✅ Hiding loading indicator and showing grid (retry)');
+        loadingEl.style.display = 'none';
+        gridEl.style.display = 'block';
       } else {
-        // DOM is already ready
-        setTimeout(hideLoadingWhenReadyRetry, 100);
+        console.log('❌ Elements not found (retry) - this should not happen since script loads at end of page');
       }
       
     } catch (retryError) {

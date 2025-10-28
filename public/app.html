@@ -2345,9 +2345,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
-  
-  <!-- Load Firebase config directly from Railway -->
-  <script src="https://gpt-cells-app-production.up.railway.app/firebase-config.js"></script>
   <script src="client-ai.js"></script>
   <script>
     // Title editing functionality
@@ -2475,6 +2472,9 @@
       });
     });
   </script>
-  <script src="script.js"></script>
+  <script src="script.js">  </script>
+  
+  <!-- Load Firebase config after DOM is ready -->
+  <script src="https://gpt-cells-app-production.up.railway.app/firebase-config.js"></script>
 </body>
 </html>
