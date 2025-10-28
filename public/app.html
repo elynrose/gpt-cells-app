@@ -2346,76 +2346,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   
-  <script>
-    (function(){
-      function loadScript(src, onload) {
-        var s = document.createElement('script');
-        s.src = src;
-        s.onload = onload;
-        s.onerror = function(){
-          console.log('Failed to load from:', src);
-          // Try next fallback
-          if (src.includes('up.railway.app')) {
-            console.log('Trying local server fallback...');
-            loadScript('/firebase-config.js', onload);
-          } else if (src === '/firebase-config.js') {
-            console.log('Trying static file fallback...');
-            loadScript('firebase-config.js', onload);
-          }
-        };
-        document.head.appendChild(s);
-      }
-      
-      function hideLoadingIndicator() {
-        const loadingEl = document.getElementById('firebase-loading');
-        const gridEl = document.getElementById('grid');
-        if (loadingEl && gridEl) {
-          console.log('Hiding loading indicator and showing grid');
-          loadingEl.style.display = 'none';
-          gridEl.style.display = 'block';
-        }
-      }
-      
-      function loadFirebaseConfig() {
-        // Wait for Firebase SDK to be available
-        if (typeof firebase === 'undefined') {
-          console.log('Waiting for Firebase SDK to load...');
-          setTimeout(loadFirebaseConfig, 100);
-          return;
-        }
-        
-        console.log('Firebase SDK loaded, loading config...');
-        // Prefer Railway (env-driven), then local server, then static file
-        loadScript('https://gpt-cells-app-production.up.railway.app/firebase-config.js', function() {
-          console.log('Firebase config loaded successfully from Railway');
-          
-          // Test if Firebase is working
-          setTimeout(function() {
-            if (typeof window.auth !== 'undefined' && typeof window.db !== 'undefined') {
-              console.log('✅ Firebase services are available');
-              hideLoadingIndicator();
-            } else {
-              console.log('❌ Firebase services not available, trying fallback...');
-              // Try local fallback
-              loadScript('/firebase-config.js', function() {
-                console.log('Local Firebase config loaded');
-                setTimeout(hideLoadingIndicator, 500);
-              });
-            }
-          }, 2000);
-        });
-      }
-      
-      // Start loading Firebase config
-      loadFirebaseConfig();
-      
-      // Fallback: hide loading indicator after 10 seconds regardless
-      setTimeout(function() {
-        console.log('Fallback: hiding loading indicator after timeout');
-        hideLoadingIndicator();
-      }, 10000);
-    })();
-  </script>
+  <!-- Load Firebase config directly from Railway -->
+  <script src="https://gpt-cells-app-production.up.railway.app/firebase-config.js"></script>
   <script src="client-ai.js"></script>
   <script>
     // Title editing functionality
