@@ -786,14 +786,42 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Firebase configuration endpoint - serve the actual firebase-config.js file
+    // Firebase configuration endpoint - respond with dynamic config from environment, fallback to file
     if (req.url === '/firebase-config.js') {
+      const envConfig = {
+        apiKey: process.env.FIREBASE_API_KEY,
+        authDomain: process.env.FIREBASE_AUTH_DOMAIN || 'cellulai.firebaseapp.com',
+        projectId: process.env.FIREBASE_PROJECT_ID || 'cellulai',
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'cellulai.appspot.com',
+        messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '857760697765',
+        appId: process.env.FIREBASE_APP_ID || '1:857760697765:web:74605f6e0667d0feebec4c',
+        measurementId: process.env.FIREBASE_MEASUREMENT_ID || 'G-NBGFZ6T90R'
+      };
+
+      const hasApiKey = typeof envConfig.apiKey === 'string' && envConfig.apiKey.trim().length > 0 && envConfig.apiKey !== 'YOUR_FIREBASE_API_KEY';
+
+      if (hasApiKey) {
+        const js = `// Served dynamically by server.js using environment variables\n` +
+          `const firebaseConfig = ${JSON.stringify(envConfig)};\n` +
+          `const app = firebase.initializeApp(firebaseConfig);\n` +
+          `const auth = firebase.auth();\n` +
+          `const db = firebase.firestore();\n` +
+          `const storage = firebase.storage ? firebase.storage() : null;\n` +
+          `window.auth = auth; window.db = db; window.storage = storage;`;
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.end(js);
+        return;
+      }
+
+      // Fallback to static file if env not set
       const filePath = path.join(publicDir, 'firebase-config.js');
       fs.readFile(filePath, (err, content) => {
         if (err) {
-          res.statusCode = 404;
+          res.statusCode = 500;
           res.setHeader('Content-Type', 'text/plain');
-          res.end('Firebase config not found');
+          res.end('Firebase config not available');
           return;
         }
         res.statusCode = 200;
