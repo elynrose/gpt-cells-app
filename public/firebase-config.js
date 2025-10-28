@@ -13,11 +13,37 @@ const firebaseConfig = {
   measurementId: "G-NBGFZ6T90R"
 };
 
-// Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-const storage = firebase.storage ? firebase.storage() : null;
+// Initialize Firebase with error handling
+let app, auth, db, storage;
+
+try {
+  // Check if Firebase is loaded
+  if (typeof firebase === 'undefined') {
+    console.error('Firebase SDK not loaded yet');
+    throw new Error('Firebase SDK not available');
+  }
+  
+  app = firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
+  storage = firebase.storage ? firebase.storage() : null;
+  
+  console.log('✅ Firebase initialized successfully');
+} catch (error) {
+  console.error('❌ Firebase initialization failed:', error);
+  // Retry after a short delay
+  setTimeout(() => {
+    try {
+      app = firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      db = firebase.firestore();
+      storage = firebase.storage ? firebase.storage() : null;
+      console.log('✅ Firebase initialized on retry');
+    } catch (retryError) {
+      console.error('❌ Firebase initialization retry failed:', retryError);
+    }
+  }, 1000);
+}
 
 // Google Auth Provider
 const googleProvider = new firebase.auth.GoogleAuthProvider();

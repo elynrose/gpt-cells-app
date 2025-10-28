@@ -2024,7 +2024,13 @@
     <span id="cell-status" style="margin-left: 15px; font-weight: 500; color: #000000;">Click a cell to select</span>
   </div>
   <div class="grid-container">
-  <div id="grid"></div>
+    <div id="firebase-loading" style="display: flex; align-items: center; justify-content: center; height: 200px; font-size: 18px; color: #666;">
+      <div style="text-align: center;">
+        <div style="margin-bottom: 10px;">🔄</div>
+        <div>Firebase is loading. Please wait a moment...</div>
+      </div>
+    </div>
+    <div id="grid" style="display: none;"></div>
   </div>
   <div id="sheet-tabs" class="sheet-tabs">
     <!-- Sheet tabs will be populated by JavaScript -->
@@ -2359,11 +2365,33 @@
         };
         document.head.appendChild(s);
       }
-      // Prefer Railway (env-driven), then local server, then static file
-      console.log('Loading Firebase config from Railway...');
-      loadScript('https://gpt-cells-app-production.up.railway.app/firebase-config.js', function() {
-        console.log('Firebase config loaded successfully from Railway');
-      });
+      
+      function loadFirebaseConfig() {
+        // Wait for Firebase SDK to be available
+        if (typeof firebase === 'undefined') {
+          console.log('Waiting for Firebase SDK to load...');
+          setTimeout(loadFirebaseConfig, 100);
+          return;
+        }
+        
+        console.log('Firebase SDK loaded, loading config...');
+        // Prefer Railway (env-driven), then local server, then static file
+        loadScript('https://gpt-cells-app-production.up.railway.app/firebase-config.js', function() {
+          console.log('Firebase config loaded successfully from Railway');
+          // Hide loading indicator and show grid
+          setTimeout(() => {
+            const loadingEl = document.getElementById('firebase-loading');
+            const gridEl = document.getElementById('grid');
+            if (loadingEl && gridEl) {
+              loadingEl.style.display = 'none';
+              gridEl.style.display = 'block';
+            }
+          }, 500);
+        });
+      }
+      
+      // Start loading Firebase config
+      loadFirebaseConfig();
     })();
   </script>
   <script src="client-ai.js"></script>
