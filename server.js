@@ -823,11 +823,17 @@ try {
   
   // Hide loading indicator and show grid
   setTimeout(() => {
+    console.log('🔍 Looking for loading elements...');
     const loadingEl = document.getElementById('firebase-loading');
     const gridEl = document.getElementById('grid');
+    console.log('Loading element found:', !!loadingEl);
+    console.log('Grid element found:', !!gridEl);
     if (loadingEl && gridEl) {
+      console.log('✅ Hiding loading indicator and showing grid');
       loadingEl.style.display = 'none';
       gridEl.style.display = 'block';
+    } else {
+      console.log('❌ Loading or grid element not found');
     }
   }, 500);
   
@@ -844,11 +850,17 @@ try {
       
       // Hide loading indicator and show grid
       setTimeout(() => {
+        console.log('🔍 Looking for loading elements (retry)...');
         const loadingEl = document.getElementById('firebase-loading');
         const gridEl = document.getElementById('grid');
+        console.log('Loading element found (retry):', !!loadingEl);
+        console.log('Grid element found (retry):', !!gridEl);
         if (loadingEl && gridEl) {
+          console.log('✅ Hiding loading indicator and showing grid (retry)');
           loadingEl.style.display = 'none';
           gridEl.style.display = 'block';
+        } else {
+          console.log('❌ Loading or grid element not found (retry)');
         }
       }, 500);
       
