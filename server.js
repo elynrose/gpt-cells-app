@@ -1104,6 +1104,7 @@ async function startServer() {
     server.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
       console.log(`📊 Health check available at http://localhost:${port}/health`);
+      console.log(`🌐 Railway deployment ready - Firebase config available at /firebase-config.js`);
     });
 
     server.on('error', (error) => {
