@@ -2474,13 +2474,13 @@
   </script>
   <script src="script.js">  </script>
   
-  <!-- Load Firebase config after DOM is ready -->
-  <script src="https://gpt-cells-app-production.up.railway.app/firebase-config.js"></script>
+  <!-- Load Firebase config - use static file with all services -->
+  <script src="firebase-config.js"></script>
   
   <!-- Check for Firebase ready and hide loading indicator -->
   <script>
     (function checkFirebaseReady() {
-      if (window.firebaseReady && window.auth && window.db) {
+      if (window.auth && window.db && window.authService) {
         console.log('✅ Firebase is ready, hiding loading indicator');
         const loadingEl = document.getElementById('firebase-loading');
         const gridEl = document.getElementById('grid');
