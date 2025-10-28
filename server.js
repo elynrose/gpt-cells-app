@@ -816,8 +816,26 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Firebase configuration endpoint - respond with dynamic config from environment, fallback to file
-    if (req.url === '/firebase-config.js') {
+  // Serve static firebase-config.js with all services
+  if (req.url === '/firebase-config-static.js') {
+    const filePath = path.join(publicDir, 'firebase-config.js');
+    fs.readFile(filePath, (err, content) => {
+      if (err) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'text/plain');
+        res.end('Firebase config not available');
+        return;
+      }
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.end(content);
+    });
+    return;
+  }
+
+  // Firebase configuration endpoint - respond with dynamic config from environment, fallback to file
+  if (req.url === '/firebase-config.js') {
       const envConfig = {
         apiKey: process.env.FIREBASE_API_KEY,
         authDomain: process.env.FIREBASE_AUTH_DOMAIN || 'cellulai.firebaseapp.com',
