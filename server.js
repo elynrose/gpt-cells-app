@@ -821,43 +821,9 @@ try {
   
   console.log('✅ Firebase initialized successfully from Railway');
   
-  // Hide loading indicator and show grid (DOM is ready since script loads at end of page)
-  console.log('🔍 Looking for loading elements...');
-  console.log('Document ready state:', document.readyState);
-  console.log('Document body exists:', !!document.body);
-  console.log('All divs with id:', document.querySelectorAll('div[id]').length);
-  
-  // Debug: List all div IDs
-  const allDivs = document.querySelectorAll('div[id]');
-  console.log('All div IDs:', Array.from(allDivs).map(div => div.id));
-  
-  const loadingEl = document.getElementById('firebase-loading');
-  const gridEl = document.getElementById('grid');
-  console.log('Loading element found:', !!loadingEl);
-  console.log('Grid element found:', !!gridEl);
-  
-  if (loadingEl && gridEl) {
-    console.log('✅ Hiding loading indicator and showing grid');
-    loadingEl.style.display = 'none';
-    gridEl.style.display = 'block';
-  } else {
-    console.log('❌ Elements not found - trying with setTimeout...');
-    setTimeout(() => {
-      console.log('Retry - Document ready state:', document.readyState);
-      const retryLoadingEl = document.getElementById('firebase-loading');
-      const retryGridEl = document.getElementById('grid');
-      console.log('Retry - Loading element found:', !!retryLoadingEl);
-      console.log('Retry - Grid element found:', !!retryGridEl);
-      
-      if (retryLoadingEl && retryGridEl) {
-        console.log('✅ Hiding loading indicator and showing grid (retry)');
-        retryLoadingEl.style.display = 'none';
-        retryGridEl.style.display = 'block';
-      } else {
-        console.log('❌ Still not found after retry');
-      }
-    }, 100);
-  }
+  // Set a flag that Firebase is ready - let script.js handle the UI
+  window.firebaseReady = true;
+  window.firebaseLoadedFromRailway = true;
   
 } catch (error) {
   console.error('❌ Firebase initialization failed:', error);
@@ -870,37 +836,9 @@ try {
       storage = firebase.storage ? firebase.storage() : null;
       console.log('✅ Firebase initialized on retry from Railway');
       
-      // Hide loading indicator and show grid (retry)
-      console.log('🔍 Looking for loading elements (retry)...');
-      console.log('Retry - Document ready state:', document.readyState);
-      console.log('Retry - Document body exists:', !!document.body);
-      console.log('Retry - All divs with id:', document.querySelectorAll('div[id]').length);
-      
-      // Debug: List all div IDs
-      const allDivs = document.querySelectorAll('div[id]');
-      console.log('Retry - All div IDs:', Array.from(allDivs).map(div => div.id));
-      
-      const loadingEl = document.getElementById('firebase-loading');
-      const gridEl = document.getElementById('grid');
-      console.log('Loading element found (retry):', !!loadingEl);
-      console.log('Grid element found (retry):', !!gridEl);
-      
-      if (loadingEl && gridEl) {
-        console.log('✅ Hiding loading indicator and showing grid (retry)');
-        loadingEl.style.display = 'none';
-        gridEl.style.display = 'block';
-      } else {
-        console.log('❌ Elements not found (retry) - trying setTimeout...');
-        setTimeout(() => {
-          const retryLoadingEl = document.getElementById('firebase-loading');
-          const retryGridEl = document.getElementById('grid');
-          if (retryLoadingEl && retryGridEl) {
-            console.log('✅ Hiding loading indicator and showing grid (retry setTimeout)');
-            retryLoadingEl.style.display = 'none';
-            retryGridEl.style.display = 'block';
-          }
-        }, 100);
-      }
+      // Set a flag that Firebase is ready - let script.js handle the UI
+      window.firebaseReady = true;
+      window.firebaseLoadedFromRailway = true;
       
     } catch (retryError) {
       console.error('❌ Firebase initialization retry failed:', retryError);
