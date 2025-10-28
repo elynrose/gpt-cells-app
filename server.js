@@ -801,13 +801,72 @@ const server = http.createServer(async (req, res) => {
       const hasApiKey = typeof envConfig.apiKey === 'string' && envConfig.apiKey.trim().length > 0 && envConfig.apiKey !== 'YOUR_FIREBASE_API_KEY';
 
       if (hasApiKey) {
-        const js = `// Served dynamically by server.js using environment variables\n` +
-          `const firebaseConfig = ${JSON.stringify(envConfig)};\n` +
-          `const app = firebase.initializeApp(firebaseConfig);\n` +
-          `const auth = firebase.auth();\n` +
-          `const db = firebase.firestore();\n` +
-          `const storage = firebase.storage ? firebase.storage() : null;\n` +
-          `window.auth = auth; window.db = db; window.storage = storage;`;
+        const js = `// Served dynamically by server.js using environment variables
+const firebaseConfig = ${JSON.stringify(envConfig)};
+
+// Initialize Firebase with error handling
+let app, auth, db, storage;
+
+try {
+  // Check if Firebase is loaded
+  if (typeof firebase === 'undefined') {
+    console.error('Firebase SDK not loaded yet');
+    throw new Error('Firebase SDK not available');
+  }
+  
+  app = firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
+  storage = firebase.storage ? firebase.storage() : null;
+  
+  console.log('✅ Firebase initialized successfully from Railway');
+  
+  // Hide loading indicator and show grid
+  setTimeout(() => {
+    const loadingEl = document.getElementById('firebase-loading');
+    const gridEl = document.getElementById('grid');
+    if (loadingEl && gridEl) {
+      loadingEl.style.display = 'none';
+      gridEl.style.display = 'block';
+    }
+  }, 500);
+  
+} catch (error) {
+  console.error('❌ Firebase initialization failed:', error);
+  // Retry after a short delay
+  setTimeout(() => {
+    try {
+      app = firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      db = firebase.firestore();
+      storage = firebase.storage ? firebase.storage() : null;
+      console.log('✅ Firebase initialized on retry from Railway');
+      
+      // Hide loading indicator and show grid
+      setTimeout(() => {
+        const loadingEl = document.getElementById('firebase-loading');
+        const gridEl = document.getElementById('grid');
+        if (loadingEl && gridEl) {
+          loadingEl.style.display = 'none';
+          gridEl.style.display = 'block';
+        }
+      }, 500);
+      
+    } catch (retryError) {
+      console.error('❌ Firebase initialization retry failed:', retryError);
+    }
+  }, 1000);
+}
+
+// Google Auth Provider
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
+
+// Make services globally available
+window.auth = auth;
+window.db = db;
+window.storage = storage;`;
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/javascript');
         res.setHeader('Access-Control-Allow-Origin', '*');

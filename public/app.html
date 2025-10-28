@@ -2378,15 +2378,6 @@
         // Prefer Railway (env-driven), then local server, then static file
         loadScript('https://gpt-cells-app-production.up.railway.app/firebase-config.js', function() {
           console.log('Firebase config loaded successfully from Railway');
-          // Hide loading indicator and show grid
-          setTimeout(() => {
-            const loadingEl = document.getElementById('firebase-loading');
-            const gridEl = document.getElementById('grid');
-            if (loadingEl && gridEl) {
-              loadingEl.style.display = 'none';
-              gridEl.style.display = 'block';
-            }
-          }, 500);
         });
       }
       
