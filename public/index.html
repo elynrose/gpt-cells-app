@@ -4,7 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPT Cells - AI-Powered Spreadsheet Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
+        /* --- CSS VARIABLES & RESET --- */
+        :root {
+            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-display: 'Playfair Display', serif;
+            
+            --color-bg: #ffffff;
+            --color-bg-secondary: #f9f9f9;
+            --color-text-main: #242424;
+            --color-text-muted: #6b6b6b;
+            
+            --color-border: #e0e0e0;
+            --color-border-hover: #b0b0b0;
+            
+            --color-accent: #1a8917;
+            --color-accent-hover: #156d12;
+            --color-focus: #2196f3;
+            
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+            
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-pill: 100px;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,10 +41,10 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #ffffff;
+            font-family: var(--font-ui);
+            background: var(--color-bg);
             min-height: 100vh;
-            color: #000000;
+            color: var(--color-text-main);
         }
 
         .container {
@@ -26,13 +55,15 @@
 
         /* Header */
         .header {
-            background: #000000;
-            padding: 20px 0;
+            background: var(--color-bg);
+            padding: 16px 0;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             z-index: 1000;
+            border-bottom: 1px solid var(--color-border);
+            box-shadow: var(--shadow-sm);
         }
 
         .nav {
@@ -42,44 +73,52 @@
         }
 
         .logo {
+            font-family: var(--font-display);
             font-size: 1.8rem;
-            font-weight: bold;
-            color: white;
+            font-weight: 700;
+            color: var(--color-text-main);
             text-decoration: none;
+            transition: color 0.2s;
+        }
+        .logo:hover {
+            color: var(--color-accent);
         }
 
         .nav-links {
             display: flex;
-            gap: 30px;
+            gap: 24px;
             align-items: center;
         }
 
         .nav-links a {
-            color: white;
+            color: var(--color-text-muted);
             text-decoration: none;
             font-weight: 500;
-            transition: opacity 0.3s ease;
+            font-size: 14px;
+            transition: color 0.2s;
         }
 
         .nav-links a:hover {
-            opacity: 0.8;
+            color: var(--color-text-main);
         }
 
         .login-btn {
-            background: #ffffff;
-            color: #000000;
-            padding: 12px 24px;
-            border-radius: 0;
+            background: var(--color-accent);
+            color: white;
+            padding: 8px 20px;
+            border-radius: var(--radius-pill);
             text-decoration: none;
             font-weight: 600;
-            transition: all 0.3s ease;
-            border: 2px solid #000000;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            border: none;
+            box-shadow: 0 2px 4px rgba(26, 137, 23, 0.2);
         }
 
         .login-btn:hover {
-            background: #000000;
-            color: #ffffff;
-            transform: translateY(-2px);
+            background: var(--color-accent-hover);
+            box-shadow: 0 4px 8px rgba(26, 137, 23, 0.3);
+            transform: translateY(-1px);
         }
 
         /* Hero Section */
@@ -90,19 +129,22 @@
         }
 
         .hero h1 {
+            font-family: var(--font-display);
             font-size: 3.5rem;
             font-weight: 700;
             margin-bottom: 20px;
             line-height: 1.2;
+            color: var(--color-text-main);
         }
 
         .hero p {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             margin-bottom: 40px;
-            opacity: 0.9;
+            color: var(--color-text-muted);
             max-width: 600px;
             margin-left: auto;
             margin-right: auto;
+            line-height: 1.6;
         }
 
         .cta-buttons {
@@ -113,52 +155,54 @@
         }
 
         .btn-primary {
-            background: #000000;
-            color: #ffffff;
-            padding: 16px 32px;
-            border-radius: 0;
+            background: var(--color-accent);
+            color: white;
+            padding: 14px 28px;
+            border-radius: var(--radius-pill);
             text-decoration: none;
             font-weight: 600;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-            border: 2px solid #000000;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            border: none;
+            box-shadow: 0 2px 4px rgba(26, 137, 23, 0.2);
         }
 
         .btn-primary:hover {
-            background: #ffffff;
-            color: #000000;
-            transform: translateY(-3px);
+            background: var(--color-accent-hover);
+            box-shadow: 0 4px 8px rgba(26, 137, 23, 0.3);
+            transform: translateY(-2px);
         }
 
         .btn-secondary {
-            background: #ffffff;
-            color: #000000;
-            padding: 16px 32px;
-            border-radius: 0;
+            background: var(--color-bg);
+            color: var(--color-text-main);
+            padding: 14px 28px;
+            border-radius: var(--radius-pill);
             text-decoration: none;
             font-weight: 600;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-            border: 2px solid #000000;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            border: 1px solid var(--color-border);
         }
 
         .btn-secondary:hover {
-            background: #000000;
-            color: #ffffff;
-            transform: translateY(-3px);
+            background: var(--color-bg-secondary);
+            border-color: var(--color-border-hover);
+            transform: translateY(-2px);
         }
 
         /* Features Section */
         .features {
             padding: 80px 0;
-            background: #f8f8f8;
+            background: var(--color-bg-secondary);
         }
 
         .features h2 {
+            font-family: var(--font-display);
             text-align: center;
             font-size: 2.5rem;
             margin-bottom: 60px;
-            color: #000000;
+            color: var(--color-text-main);
         }
 
         .features-grid {
@@ -168,16 +212,19 @@
         }
 
         .feature-card {
-            background: #ffffff;
+            background: var(--color-bg);
             padding: 40px 30px;
-            border-radius: 0;
+            border-radius: var(--radius-md);
             text-align: center;
-            transition: transform 0.3s ease;
-            border: 1px solid #000000;
+            transition: all 0.2s ease;
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-sm);
         }
 
         .feature-card:hover {
-            transform: translateY(-10px);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--color-border-hover);
         }
 
         .feature-icon {
@@ -188,20 +235,22 @@
         .feature-card h3 {
             font-size: 1.5rem;
             margin-bottom: 15px;
-            color: #000000;
+            color: var(--color-text-main);
+            font-weight: 600;
         }
 
         .feature-card p {
-            color: #000000;
+            color: var(--color-text-muted);
             line-height: 1.6;
         }
 
         /* Footer */
         .footer {
-            background: #000000;
+            background: var(--color-bg);
             padding: 40px 0;
             text-align: center;
-            color: #ffffff;
+            color: var(--color-text-muted);
+            border-top: 1px solid var(--color-border);
         }
 
         /* Responsive */

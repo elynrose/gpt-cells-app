@@ -1,42 +1,81 @@
 /**
  * GPT Cells Application - Frontend
+ * 
  * A client-side spreadsheet application with AI-powered content generation
- * supporting text, image, and audio generation with persistent storage
+ * supporting text, image, and audio generation with persistent storage.
+ * 
+ * @fileoverview Main application script for GPT Cells
+ * @version 1.0.0
+ * @author GPT Cells Team
  */
 
-// Firebase imports - loaded via CDN and firebase-config.js
+'use strict';
 
-// Authentication state
+// ============================================================================
+// SECTION 1: GLOBAL STATE MANAGEMENT
+// ============================================================================
+
+/**
+ * Authentication state variables
+ * @type {Object|null} currentUser - Currently authenticated user object
+ * @type {boolean} isAuthenticated - Whether user is authenticated
+ * @type {boolean} isAdmin - Whether current user has admin privileges
+ */
 let currentUser = null;
 let isAuthenticated = false;
 let isAdmin = false;
 
-// Project and sheet management
+/**
+ * Project and sheet management state
+ * @type {string|null} currentProjectId - ID of the currently active project
+ * @type {Object|null} currentProject - Currently active project object
+ * @type {Array<Object>} projects - Array of all user projects
+ * @type {number} currentSheetIndex - Index of currently active sheet
+ * @type {Array<Object>} sheets - Array of all sheets in current project
+ */
 let currentProjectId = null;
 let currentProject = null;
 let projects = [];
 let currentSheetIndex = 0;
 let sheets = [
   {
-    id: 'default-sheet-' + Date.now(), // Default sheet ID
+    id: `default-sheet-${Date.now()}`, // Default sheet ID
     name: 'Sheet1',
     cells: {},
     numRows: 10,
     numCols: 10,
-    columnNames: {} // Store column aliases: {0: 'Sales', 1: 'Marketing', etc.}
+    columnNames: {}, // Store column aliases: {0: 'Sales', 1: 'Marketing', etc.}
+    cardPositions: {} // Store card positions: {cellId: {x, y}, ...}
   }
 ];
 
-// Current sheet reference
+/**
+ * Current sheet reference and derived state
+ * @type {Object} currentSheet - Currently active sheet object
+ * @type {Object} cells - Reference to current sheet's cells object
+ * @type {number} numRows - Number of rows in current sheet
+ * @type {number} numCols - Number of columns in current sheet
+ */
 let currentSheet = sheets[currentSheetIndex];
 let cells = currentSheet.cells;
 let numRows = currentSheet.numRows;
 let numCols = currentSheet.numCols;
 
-// Available models
+/**
+ * Available AI models for content generation
+ * @type {Array<Object>} availableModels - Array of available AI model configurations
+ */
 let availableModels = [];
 
-// Excel formula support
+// ============================================================================
+// SECTION 2: CONSTANTS AND CONFIGURATION
+// ============================================================================
+
+/**
+ * Excel formula functions supported by the application
+ * Provides spreadsheet-like formula evaluation capabilities
+ * @constant {Object<string, Function>} EXCEL_FUNCTIONS
+ */
 const EXCEL_FUNCTIONS = {
   SUM: (...args) => args.reduce((sum, val) => sum + (parseFloat(val) || 0), 0),
   AVERAGE: (...args) => {
@@ -58,8 +97,18 @@ const EXCEL_FUNCTIONS = {
   POWER: (base, exponent) => Math.pow(base, exponent)
 };
 
+// ============================================================================
+// SECTION 3: CELL REFERENCE PARSING
+// ============================================================================
+
 /**
- * Parse cell references (A1, B2, etc.) and return their values
+ * Parse a cell reference (e.g., "A1", "B2") and return its value
+ * 
+ * @param {string} ref - Cell reference in format "A1", "B2", etc.
+ * @returns {string|number} The cell's output value, or 0 if not found
+ * 
+ * @example
+ * parseCellReference('A1') // Returns the value of cell A1
  */
 function parseCellReference(ref) {
   const match = ref.match(/^([A-Z]+)(\d+)$/);
@@ -87,7 +136,13 @@ function parseCellReference(ref) {
 }
 
 /**
- * Parse cell ranges (A1:B2) and return their values
+ * Parse a cell range (e.g., "A1:B2") and return array of values
+ * 
+ * @param {string} range - Cell range in format "A1:B2"
+ * @returns {Array<string|number>} Array of cell values from the range
+ * 
+ * @example
+ * parseCellRange('A1:B2') // Returns [valueA1, valueB1, valueA2, valueB2]
  */
 function parseCellRange(range) {
   const [start, end] = range.split(':');
@@ -124,7 +179,16 @@ function parseCellRange(range) {
 }
 
 /**
- * Parse Excel formula and evaluate it
+ * Parse and evaluate an Excel formula
+ * 
+ * Supports cell references, ranges, and Excel functions.
+ * Note: Uses eval() which should be replaced with a safer evaluator in production.
+ * 
+ * @param {string} formula - Formula string starting with "="
+ * @returns {string|number} Evaluated result or "#ERROR" if parsing fails
+ * 
+ * @example
+ * parseFormula('=SUM(A1:A3)') // Returns sum of cells A1 through A3
  */
 function parseFormula(formula) {
   try {
@@ -174,6 +238,9 @@ function parseFormula(formula) {
 
 /**
  * Check if a cell value is a formula
+ * 
+ * @param {*} value - Value to check
+ * @returns {boolean} True if value is a formula (starts with "=")
  */
 function isFormula(value) {
   return typeof value === 'string' && value.startsWith('=');
@@ -391,7 +458,7 @@ function initializeFormattingControls() {
  */
 async function loadAvailableModels() {
   try {
-    console.log('🔄 Loading available models...');
+
     const response = await fetch('https://gpt-cells-app-production.up.railway.app/api/models');
     
     if (!response.ok) {
@@ -400,9 +467,7 @@ async function loadAvailableModels() {
     
     const data = await response.json();
     availableModels = data.models || [];
-    
-    console.log('✅ Loaded models:', availableModels.length);
-    
+
     // Populate the model selector
     populateModelSelector();
     
@@ -411,7 +476,7 @@ async function loadAvailableModels() {
     
     // Populate cell model selectors if grid is already rendered
     if (typeof populateCellModelSelectors === 'function') {
-      console.log('Populating cell model selectors after models loaded');
+
       populateCellModelSelectors(availableModels);
       
       // After populating, update all empty cells to use the current default model
@@ -428,7 +493,7 @@ async function loadAvailableModels() {
     
     // Also populate cell model selectors with empty state
     if (typeof populateCellModelSelectors === 'function') {
-      console.log('Populating cell model selectors with empty state after error');
+
       populateCellModelSelectors([]);
     }
   }
@@ -440,7 +505,7 @@ async function loadAvailableModels() {
 function populateModelSelector() {
   const modelSelect = document.getElementById('model-select');
   if (!modelSelect) {
-    console.warn('⚠️ Model selector not found');
+
     return;
   }
   
@@ -467,8 +532,7 @@ function populateModelSelector() {
   if (availableModels.length > 0) {
     modelSelect.value = availableModels[0].id;
   }
-  
-  console.log('✅ Model selector populated with', availableModels.length, 'models');
+
 }
 
 /**
@@ -477,7 +541,7 @@ function populateModelSelector() {
 function populateModalModelSelector() {
   const modalModelSelect = document.getElementById('modalModel');
   if (!modalModelSelect) {
-    console.warn('⚠️ Modal model selector not found');
+
     return;
   }
   
@@ -504,13 +568,21 @@ function populateModalModelSelector() {
   if (availableModels.length > 0) {
     modalModelSelect.value = availableModels[0].id;
   }
-  
-  console.log('✅ Modal model selector populated with', availableModels.length, 'models');
+
 }
 
 /**
  * Get the default model for new cells
  * Priority: Main selector (current selection) > Project default model > Hardcoded fallback
+ */
+// ============================================================================
+// SECTION 6: MODEL MANAGEMENT
+// ============================================================================
+
+/**
+ * Get the default AI model from the main model selector
+ * 
+ * @returns {string} The selected model ID, or 'gpt-3.5-turbo' as fallback
  */
 function getDefaultModel() {
   const mainModelSelect = document.getElementById('model-select');
@@ -522,13 +594,22 @@ function getDefaultModel() {
   return selectorModel || projectDefaultModel || 'gpt-3.5-turbo';
 }
 
-// Log initial sheet state
-console.log('🚀 Initial sheet setup:');
-console.log('🚀 currentSheet:', currentSheet);
-console.log('🚀 currentSheet.id:', currentSheet?.id || 'null/undefined');
-console.log('🚀 sheets array:', sheets);
 
 // Error handling and user feedback
+// ============================================================================
+// SECTION 5: USER FEEDBACK AND NOTIFICATIONS
+// ============================================================================
+
+/**
+ * Display an error message to the user
+ * 
+ * Creates a temporary error notification that appears in the top-right corner
+ * of the screen and automatically disappears after the specified duration.
+ * 
+ * @param {string} message - Error message to display
+ * @param {number} [duration=5000] - Duration in milliseconds before auto-hiding
+ * @returns {void}
+ */
 function showError(message, duration = 5000) {
   console.error('App Error:', message);
   
@@ -562,6 +643,16 @@ function showError(message, duration = 5000) {
   }, duration);
 }
 
+/**
+ * Display a success message to the user
+ * 
+ * Creates a temporary success notification that appears in the top-right corner
+ * of the screen and automatically disappears after the specified duration.
+ * 
+ * @param {string} message - Success message to display
+ * @param {number} [duration=3000] - Duration in milliseconds before auto-hiding
+ * @returns {void}
+ */
 function showSuccess(message, duration = 3000) {
   const successDiv = document.createElement('div');
   successDiv.className = 'success-notification';
@@ -866,18 +957,395 @@ function initializeCells() {
   }
 }
 
+// ============================================================================
+// SECTION 8: UI RENDERING
+// ============================================================================
+
 /**
- * Render the grid of cells as an HTML table.
+ * Render the card-based grid UI
+ * 
+ * This function renders all cards in the current sheet, ensuring:
+ * - All cards from currentSheet.cells are displayed
+ * - Card positions are preserved
+ * - Ports are visible on all cards
+ * - Connection lines are drawn
+ * - Event handlers are set up
+ * 
+ * @returns {void}
  */
 function renderGrid() {
   // Don't initialize cells here - use the data from currentSheet.cells
   // initializeCells();
-  const gridContainer = document.getElementById('grid');
-  if (!gridContainer) {
-    console.error('Grid container not found!');
+  const cardsContainer = document.getElementById('cards-container');
+  if (!cardsContainer) {
+    setTimeout(renderGrid, 100);
     return;
   }
-  let html = '<table><thead><tr><th class="row-header" style="width: 50px; min-width: 50px; max-width: 50px;"></th>';
+  
+  // Ensure container is visible
+  const loadingEl = document.getElementById('firebase-loading');
+  if (loadingEl) {
+    loadingEl.style.display = 'none';
+  }
+  if (cardsContainer.style.display === 'none' || !cardsContainer.style.display) {
+    cardsContainer.style.display = 'block';
+  }
+  
+  const cardsDiv = document.getElementById('cards');
+  const svg = document.getElementById('connection-lines');
+  
+  if (!cardsDiv) {
+    const newCardsDiv = document.createElement('div');
+    newCardsDiv.id = 'cards';
+    newCardsDiv.style.cssText = 'position: relative; z-index: 2;';
+    cardsContainer.appendChild(newCardsDiv);
+    setTimeout(renderGrid, 50);
+    return;
+  }
+  
+  if (!svg) {
+    const newSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    newSvg.id = 'connection-lines';
+    newSvg.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;';
+    cardsContainer.insertBefore(newSvg, cardsDiv);
+    setTimeout(renderGrid, 50);
+    return;
+  }
+  
+  const gridContainer = cardsDiv;
+  // Get all cells (including those without content yet, so they can be connected)
+  const allCellIds = Object.keys(currentSheet.cells);
+  
+  // If no cells at all, show a message and allow creating a card
+  if (allCellIds.length === 0) {
+    gridContainer.innerHTML = `
+      <div style="text-align: center; padding: 100px 20px; color: #6c757d;">
+        <div style="font-size: 48px; margin-bottom: 20px;">📋</div>
+        <div style="font-size: 18px; font-weight: 500; margin-bottom: 10px;">No cards yet</div>
+        <div style="font-size: 14px; margin-bottom: 30px; color: #9aa0a6;">Create your first card to get started</div>
+        <button onclick="createNewCard()" style="background: #1967d2; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">Create First Card</button>
+      </div>
+    `;
+    return;
+  }
+  
+  // Card dimensions and spacing
+  const cardWidth = 280;
+  const cardHeight = 200;
+  const spacing = 40;
+  let x = 40;
+  let y = 40;
+  
+  // Use global cardPositions, initialize from currentSheet if available
+  if (typeof window.cardPositions === 'undefined') {
+    if (currentSheet && currentSheet.cardPositions) {
+      window.cardPositions = { ...currentSheet.cardPositions };
+    } else {
+      window.cardPositions = {};
+    }
+  }
+  const cardPositions = window.cardPositions;
+  
+  // Instead of clearing and rebuilding, update existing cards or create missing ones
+  // This preserves cards that were created via createCardForCell() before they're saved
+  
+  // First, ensure all cards in currentSheet.cells exist in the DOM
+  // Track which card was focused before render
+  const previouslyFocusedCard = document.querySelector('.card.focused');
+  const previouslyFocusedCellId = previouslyFocusedCard ? previouslyFocusedCard.getAttribute('data-cell-id') : null;
+  
+  for (const id of allCellIds) {
+    // Check if card already exists in DOM
+    const existingCard = document.getElementById(`card-${id}`);
+    if (!existingCard) {
+      // Card doesn't exist, create it
+      createCardForCell(id);
+    } else {
+      // Card exists, just update its position if needed
+      const cell = currentSheet.cells[id];
+      if (!cardPositions[id]) {
+        cardPositions[id] = { x, y };
+        x += cardWidth + spacing;
+        if (x > 1000) {
+          x = 40;
+          y += cardHeight + spacing;
+        }
+      }
+      const pos = cardPositions[id];
+      existingCard.style.left = `${pos.x}px`;
+      existingCard.style.top = `${pos.y}px`;
+      
+      // Restore focused state if this was the previously focused card
+      if (previouslyFocusedCellId === id) {
+        existingCard.classList.add('focused');
+      }
+      
+      // Ensure ports exist (they might have been removed somehow)
+      const inputPort = existingCard.querySelector('.card-port.input');
+      const outputPort = existingCard.querySelector('.card-port.output');
+      if (!inputPort) {
+        const newInputPort = document.createElement('div');
+        newInputPort.className = 'card-port input';
+        newInputPort.title = 'Drop connection here';
+        existingCard.insertBefore(newInputPort, existingCard.firstChild);
+      }
+      if (!outputPort) {
+        const newOutputPort = document.createElement('div');
+        newOutputPort.className = 'card-port output';
+        newOutputPort.title = 'Drag to connect to another card';
+        // Insert after input port or at the beginning
+        const inputPortAfter = existingCard.querySelector('.card-port.input');
+        if (inputPortAfter) {
+          inputPortAfter.insertAdjacentElement('afterend', newOutputPort);
+        } else {
+          existingCard.insertBefore(newOutputPort, existingCard.firstChild);
+        }
+      }
+      
+      // If card is focused, ensure ports are visible
+      if (existingCard.classList.contains('focused')) {
+        const inputPortFinal = existingCard.querySelector('.card-port.input');
+        const outputPortFinal = existingCard.querySelector('.card-port.output');
+        if (inputPortFinal) {
+          inputPortFinal.style.opacity = '1';
+          inputPortFinal.style.visibility = 'visible';
+        }
+        if (outputPortFinal) {
+          outputPortFinal.style.opacity = '1';
+          outputPortFinal.style.visibility = 'visible';
+        }
+      }
+      
+      // Update textarea value if it changed (but don't overwrite user's current typing)
+      const textarea = existingCard.querySelector(`#prompt-${id}`);
+      if (textarea && cell) {
+        // Only update if textarea is not currently focused (user is not typing)
+        if (!document.activeElement || document.activeElement !== textarea) {
+          if (textarea.value !== (cell.prompt || '')) {
+            textarea.value = cell.prompt || '';
+          }
+        }
+      }
+    }
+  }
+  
+  // Remove cards from DOM that are no longer in currentSheet.cells
+  document.querySelectorAll('.card').forEach(card => {
+    const cardId = card.getAttribute('data-cell-id');
+    if (!currentSheet.cells[cardId]) {
+      card.remove();
+    }
+  });
+  
+  // Redraw connection lines
+  if (typeof drawConnectionLines === 'function') {
+    drawConnectionLines();
+  }
+  
+  // Populate cell model selectors after cards are rendered
+  if (typeof populateCellModelSelectors === 'function') {
+    const models = availableModels || window.availableModels || [];
+    if (models.length > 0) {
+      populateCellModelSelectors(models);
+      setTimeout(() => {
+        updateAllCellModelDefaults();
+      }, 100);
+    }
+  }
+  
+  // Set up event delegation for card interactions
+  if (typeof setupCardEventDelegation === 'function') {
+    setupCardEventDelegation();
+  }
+  
+  // Set up card dragging
+  if (typeof setupCardDragging === 'function') {
+    setupCardDragging();
+  }
+  
+  // Set up card connections
+  if (typeof setupCardConnections === 'function') {
+    setupCardConnections();
+  }
+  
+  // Ensure all cards have ports (safeguard)
+  ensureAllCardPorts();
+  
+  // Ensure focused card's ports are visible
+  const focusedCard = document.querySelector('.card.focused');
+  if (focusedCard) {
+    const inputPort = focusedCard.querySelector('.card-port.input');
+    const outputPort = focusedCard.querySelector('.card-port.output');
+    if (inputPort) {
+      inputPort.style.opacity = '1';
+      inputPort.style.visibility = 'visible';
+    }
+    if (outputPort) {
+      outputPort.style.opacity = '1';
+      outputPort.style.visibility = 'visible';
+    }
+  }
+  
+  // Initialize interval timers for cards with autoRun and interval set
+  allCellIds.forEach(id => {
+    updateCellIntervalTimer(id);
+  });
+  
+  return; // Early return - we're done, no need to build HTML string
+  
+  // OLD CODE BELOW - keeping for reference but not executing
+  let html = '';
+  
+  // Render each cell as a card (including those without content yet)
+  for (const id of allCellIds) {
+    const cell = currentSheet.cells[id];
+    const defaultModel = getDefaultModel();
+    
+    // Initialize position if not set
+    if (!cardPositions[id]) {
+      cardPositions[id] = { x, y };
+      x += cardWidth + spacing;
+      if (x > 1000) {
+        x = 40;
+        y += cardHeight + spacing;
+      }
+    }
+    
+    const pos = cardPositions[id];
+    const hasPrompt = cell.cellPrompt && cell.cellPrompt.trim() !== '';
+    const hasSelectedGenerations = cell.selectedGenerations && cell.selectedGenerations.length > 0;
+    
+    html += `<div class="card" id="card-${id}" data-cell-id="${id}" style="left: ${pos.x}px; top: ${pos.y}px;">`;
+    html += '<div class="card-port input" title="Drop connection here"></div>';
+    html += '<div class="card-port output" title="Drag to connect to another card"></div>';
+    html += `<div class="card-header">`;
+    html += `<span class="card-id">${id}</span>`;
+    html += `<div class="card-header-actions">`;
+    html += `<button class="card-modal-btn" onclick="openModal('${id}')" title="Open in modal">📋</button>`;
+    html += `<button class="card-disconnect-btn" onclick="showDisconnectMenu(event, '${id}')" title="Disconnect cards">🔌</button>`;
+    html += `<button class="card-delete-btn" onclick="deleteCard('${id}')" title="Delete card">🗑️</button>`;
+    html += `</div>`;
+    html += `</div>`;
+    html += '<div class="card-content">';
+    html += `<textarea id="prompt-${id}" oninput="updatePrompt('${id}')" onfocus="showCardControls('${id}')" placeholder="Enter prompt...">${(cell.prompt || '')}</textarea>`;
+    html += '</div>';
+    html += '<div class="card-controls">';
+    html += '<div class="cell-controls-header">';
+    html += '<span>Settings</span>';
+    html += `<span style="color: #5f6368; font-weight: 400;">${id}</span>`;
+    html += '</div>';
+    html += `<div class="cell-controls-status" id="cell-status-${id}" style="display: none; padding: 6px 10px; border-bottom: 1px solid #e8eaed; background: #f8f9fa; font-size: 11px; color: #5f6368;"></div>`;
+    html += '<div class="cell-controls-body">';
+    html += '<div class="cell-controls-main">';
+    html += '<div class="cell-control-group">';
+    html += '<label class="cell-control-label">AI Model</label>';
+    html += '<div class="cell-model-select-wrapper">';
+    html += `<button type="button" class="cell-model-button" id="model-btn-${id}" onclick="toggleModelDropdown('${id}')" title="Select AI Model">`;
+    html += `<span class="model-button-text" id="model-text-${id}">Loading...</span>`;
+    html += '<span class="model-button-arrow">▾</span>';
+    html += '</button>';
+    html += `<div class="cell-model-dropdown" id="model-dropdown-${id}" style="display: none;"></div>`;
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="cell-control-group">';
+    html += '<label class="cell-control-label">Temperature</label>';
+    html += '<div class="cell-temp-control">';
+    html += `<input type="range" class="cell-temp-slider" id="temp-slider-${id}" min="0" max="1" step="0.1" value="${(cell.temperature || 0.7)}" oninput="updateTempFromSlider('${id}', this.value)">`;
+    html += `<input type="number" class="cell-temp-input" id="temp-${id}" min="0" max="1" step="0.1" value="${(cell.temperature || 0.7)}" onchange="updateCellTemperature('${id}')" title="Temperature (0-1)">`;
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="cell-control-group">';
+    html += '<label class="cell-control-label">Run Interval (seconds)</label>';
+    html += '<div style="display: flex; align-items: center; gap: 8px;">';
+    html += `<input type="number" class="cell-interval-input" id="interval-${id}" min="0" step="1" value="${(cell.interval || 0)}" onchange="updateCellInterval('${id}')" placeholder="0 = disabled" style="width: 80px; padding: 4px 8px; border: 1px solid #dadce0; border-radius: 4px; font-size: 12px;">`;
+    html += '<span style="font-size: 11px; color: #5f6368;">0 = disabled</span>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="cell-controls-actions">';
+    html += '<label class="cell-auto-run-toggle" title="Auto-run when content changes or dependencies update">';
+    html += `<input type="checkbox" class="cell-auto-run-checkbox" id="auto-run-${id}" ${cell.autoRun ? 'checked' : ''} onchange="updateCellAutoRun('${id}')">`;
+    html += '<span class="cell-auto-run-switch"></span>';
+    html += '<span class="auto-run-label-text">Auto</span>';
+    html += '</label>';
+    html += `<button class="cell-run-btn" onclick="runCell('${id}')" title="Run this card">Run</button>`;
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+  }
+  
+  gridContainer.innerHTML = html;
+  
+  // Set up SVG for connection lines
+  if (svg && !svg.querySelector('defs')) {
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+    marker.setAttribute('id', 'arrowhead');
+    marker.setAttribute('markerWidth', '10');
+    marker.setAttribute('markerHeight', '10');
+    marker.setAttribute('refX', '9');
+    marker.setAttribute('refY', '3');
+    marker.setAttribute('orient', 'auto');
+    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    polygon.setAttribute('points', '0 0, 10 3, 0 6');
+    marker.appendChild(polygon);
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+  }
+  
+  // Draw connection lines
+  if (typeof drawConnectionLines === 'function') {
+    drawConnectionLines();
+  }
+  
+  // Remove focused class from all cards
+  document.querySelectorAll('.card').forEach(card => {
+    card.classList.remove('focused');
+  });
+  
+  // Populate cell model selectors after cards are rendered
+  if (typeof populateCellModelSelectors === 'function') {
+    const models = availableModels || window.availableModels || [];
+    if (models.length > 0) {
+      populateCellModelSelectors(models);
+      setTimeout(() => {
+        updateAllCellModelDefaults();
+      }, 100);
+    }
+  }
+  
+  // Set up event delegation for card interactions
+  if (typeof setupCardEventDelegation === 'function') {
+    setupCardEventDelegation();
+  }
+  
+  // Set up card dragging
+  if (typeof setupCardDragging === 'function') {
+    setupCardDragging();
+  }
+  
+  // Set up card connections
+  if (typeof setupCardConnections === 'function') {
+    setupCardConnections();
+  }
+  
+  // Initialize interval timers for cards with autoRun and interval set
+  allCellIds.forEach(id => {
+    updateCellIntervalTimer(id);
+  });
+  
+  // Redraw connection lines after a short delay
+  setTimeout(() => {
+    if (typeof drawConnectionLines === 'function') {
+      drawConnectionLines();
+    }
+  }, 100);
+  
+  return; // Early return - don't execute old table code below
+  
+  // OLD TABLE CODE BELOW - NOT USED
+  let html_old = '<table><thead><tr><th class="row-header" style="width: 50px; min-width: 50px; max-width: 50px;"></th>';
   // Column headers (A, B, C...) with editable names
   for (let c = 0; c < numCols; c++) {
     const colLetter = String.fromCharCode(65 + c);
@@ -917,8 +1385,8 @@ function renderGrid() {
       const id = getCellId(c, r);
       // Get the default model for new cells
       const defaultModel = getDefaultModel();
-      const cell = currentSheet.cells[id] || { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false };
-      console.log(`Rendering cell ${id} with content:`, cell.prompt);
+      const cell = currentSheet.cells[id] || { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false, interval: 0 };
+      // Rendering cell
       html += '<td>';
       const hasPrompt = cell.cellPrompt && cell.cellPrompt.trim() !== '';
       const hasSelectedGenerations = cell.selectedGenerations && cell.selectedGenerations.length > 0;
@@ -954,7 +1422,7 @@ function renderGrid() {
     // Get models from the global models array if available
     const models = availableModels || window.availableModels || [];
     if (models.length > 0) {
-      console.log('Populating cell model selectors with', models.length, 'models');
+
       populateCellModelSelectors(models);
       
       // After populating, update all empty cells to use the current default model
@@ -962,7 +1430,7 @@ function renderGrid() {
         updateAllCellModelDefaults();
       }, 100); // Small delay to ensure selectors are populated
     } else {
-      console.log('No models available for cell selectors yet');
+
     }
   }
   
@@ -1092,7 +1560,7 @@ function saveCellOnBlur(id) {
     // Ensure cell exists in currentSheet.cells
     if (!currentSheet.cells[id]) {
       const defaultModel = getDefaultModel();
-      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false };
+      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false, interval: 0 };
     }
     
     // Update the cell's prompt
@@ -1103,27 +1571,41 @@ function saveCellOnBlur(id) {
       saveSheetToFirestore();
     }
     
-    console.log(`💾 Saved cell ${id} content:`, textarea.value);
+    // Saved cell content
   }
 }
+
+// Debounce timers for autosave
+const autosaveTimers = {};
 
 /**
  * Update the stored prompt for a cell when the user types in the textarea.
  * @param {string} id Cell identifier.
  */
+// ============================================================================
+// SECTION 7: CELL OPERATIONS
+// ============================================================================
+
+/**
+ * Update a cell's prompt value and handle autosave/auto-run
+ * 
+ * This function is called whenever a user types in a cell's textarea.
+ * It updates the cell data in memory and triggers autosave for cards.
+ * Also handles live connection updates when dependencies are detected.
+ * 
+ * @param {string} id - Cell identifier (e.g., 'A1', 'B2')
+ * @returns {void}
+ */
 function updatePrompt(id) {
-  console.log(`updatePrompt called for cell ${id}`);
   const textarea = document.getElementById('prompt-' + id);
   if (textarea) {
-    console.log(`Textarea value for ${id}:`, textarea.value);
     // Ensure cell exists in currentSheet.cells
     if (!currentSheet.cells[id]) {
       // Get the default model for new cells
       const defaultModel = getDefaultModel();
-      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false };
+      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false, interval: 0 };
     }
     currentSheet.cells[id].prompt = textarea.value;
-    console.log(`Updated cell ${id} prompt in memory:`, currentSheet.cells[id].prompt);
     
     // Remove required indicator when content is added
     const cellContainer = document.querySelector(`#prompt-${id}`)?.closest('.cell-container');
@@ -1131,17 +1613,117 @@ function updatePrompt(id) {
       cellContainer.classList.remove('cell-required');
     }
     
-    // Don't save to Firebase on every keystroke - only save on blur
+    // Check if this is a card (not a grid cell)
+    const isCard = textarea.closest('.card');
+    
+    if (isCard && currentSheet.id) {
+      // For cards, use debounced autosave
+      // Clear existing timer for this cell
+      if (autosaveTimers[id]) {
+        clearTimeout(autosaveTimers[id]);
+      }
+      
+      // Set new timer to save after 1 second of no typing
+      autosaveTimers[id] = setTimeout(() => {
+        const cell = currentSheet.cells[id];
+        if (cell) {
+          saveCellToDatabase(
+            id,
+            cell.prompt,
+            cell.output,
+            cell.model,
+            cell.temperature,
+            cell.cellPrompt,
+            cell.autoRun,
+            cell.interval
+          );
+        }
+        delete autosaveTimers[id];
+      }, 1000); // Save 1 second after user stops typing
+      
+      // Update connections in real-time (debounced for performance)
+      // Clear existing connection update timer
+      if (window.connectionUpdateTimers && window.connectionUpdateTimers[id]) {
+        clearTimeout(window.connectionUpdateTimers[id]);
+      }
+      
+      // Initialize connection update timers object if needed
+      if (!window.connectionUpdateTimers) {
+        window.connectionUpdateTimers = {};
+      }
+      
+      // Update connections after a short delay (200ms) to allow user to finish typing reference
+      window.connectionUpdateTimers[id] = setTimeout(() => {
+        // Parse dependencies to check if any new connections should be created
+        const deps = parseDependencies(currentSheet.cells[id].prompt);
+        
+        // Ensure referenced cards exist
+        deps.forEach(depRef => {
+          // Extract cell ID from dependency reference
+          let depId = depRef;
+          
+          // Skip cross-sheet references
+          if (depId.includes('!')) {
+            return;
+          }
+          
+          // Remove prefixes like "prompt:", "output:"
+          if (depRef.includes(':')) {
+            const parts = depRef.split(':');
+            depId = parts[parts.length - 1];
+          }
+          
+          // Remove generation suffixes like "-1", ":1-3", ":2"
+          if (depId.includes('-')) {
+            depId = depId.split('-')[0];
+          }
+          
+          // Remove any remaining colons (for generation ranges)
+          depId = depId.split(':')[0];
+          
+          // Ensure the referenced card exists
+          if (!currentSheet.cells[depId]) {
+            // Create the referenced cell if it doesn't exist
+            const defaultModel = getDefaultModel();
+            currentSheet.cells[depId] = {
+              prompt: '',
+              output: '',
+              model: defaultModel,
+              temperature: 0.7,
+              cellPrompt: '',
+              autoRun: false,
+              interval: 0,
+              generations: []
+            };
+            
+            // Create the card in the DOM if it doesn't exist
+            if (!document.getElementById(`card-${depId}`)) {
+              createCardForCell(depId);
+            }
+          } else {
+            // Card exists, ensure it's rendered
+            if (!document.getElementById(`card-${depId}`)) {
+              createCardForCell(depId);
+            }
+          }
+        });
+        
+        // Redraw connection lines to show new connections
+        if (typeof drawConnectionLines === 'function') {
+          drawConnectionLines();
+        }
+        
+        // Clean up timer
+        delete window.connectionUpdateTimers[id];
+      }, 200); // Update connections 200ms after user stops typing
+    }
+    // For grid cells, don't save on every keystroke - only save on blur
     
     // Check if cell has a prompt template and auto-run
     let finalPrompt = textarea.value;
     if (currentSheet.cells[id].cellPrompt && textarea.value.trim()) {
-      console.log(`Cell ${id} has prompt template:`, currentSheet.cells[id].cellPrompt);
-      console.log(`User input:`, textarea.value);
-      
       // Replace {input} placeholder with the actual input
       const processedPrompt = currentSheet.cells[id].cellPrompt.replace('{input}', textarea.value);
-      console.log(`Processed prompt:`, processedPrompt);
       
       // Update the cell's prompt with the processed template
       currentSheet.cells[id].prompt = processedPrompt;
@@ -1149,12 +1731,10 @@ function updatePrompt(id) {
       
       // Auto-run the cell
       setTimeout(() => {
-        console.log(`Auto-running cell ${id} with processed prompt`);
         runCell(id);
       }, 500); // Small delay to allow user to finish typing
     } else if (currentSheet.cells[id].autoRun && textarea.value.trim()) {
       // Auto-run if enabled and content has changed
-      console.log(`Auto-running cell ${id} due to auto-run setting`);
       setTimeout(() => {
         runCell(id);
       }, 500); // Small delay to allow user to finish typing
@@ -1165,7 +1745,88 @@ function updatePrompt(id) {
 }
 
 /**
- * Update the model for a specific cell
+ * Toggle the model dropdown for a specific cell
+ * @param {string} id Cell identifier.
+ */
+function toggleModelDropdown(id) {
+  const dropdown = document.getElementById(`model-dropdown-${id}`);
+  if (!dropdown) return;
+  
+  // Close all other dropdowns
+  document.querySelectorAll('.cell-model-dropdown').forEach(dd => {
+    if (dd.id !== `model-dropdown-${id}`) {
+      dd.style.display = 'none';
+    }
+  });
+  
+  // Toggle this dropdown
+  if (dropdown.style.display === 'none' || !dropdown.style.display) {
+    dropdown.style.display = 'block';
+  } else {
+    dropdown.style.display = 'none';
+  }
+}
+
+/**
+ * Select a model for a specific cell
+ * @param {string} id Cell identifier.
+ * @param {string} modelId Model ID to select.
+ */
+function selectCellModel(id, modelId) {
+  // Ensure cell exists in currentSheet.cells
+  if (!currentSheet.cells[id]) {
+    const defaultModel = getDefaultModel();
+    currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false, interval: 0 };
+  }
+  
+  currentSheet.cells[id].model = modelId;
+  
+  // Update button text
+  const button = document.getElementById(`model-btn-${id}`);
+  if (button) {
+    const textSpan = button.querySelector('.model-button-text');
+    if (textSpan) {
+      const models = availableModels || window.availableModels || [];
+      const model = models.find(m => m.id === modelId);
+      textSpan.textContent = model ? model.name : modelId;
+    }
+  }
+  
+  // Update dropdown selection
+  const dropdown = document.getElementById(`model-dropdown-${id}`);
+  if (dropdown) {
+    const models = availableModels || window.availableModels || [];
+    dropdown.querySelectorAll('.cell-model-option').forEach(option => {
+      option.classList.remove('selected');
+      const model = models.find(m => m.id === modelId);
+      if (option.textContent === (model ? model.name : modelId)) {
+        option.classList.add('selected');
+      }
+    });
+    dropdown.style.display = 'none';
+  }
+  
+  // Update required indicator when model changes (only if modal is active)
+  if (currentModalCellId === id) {
+    const cellContainer = document.querySelector(`#prompt-${id}`)?.closest('.cell-container');
+    if (cellContainer) {
+      const isRequired = (!currentSheet.cells[id].prompt || currentSheet.cells[id].prompt.trim() === '');
+      if (isRequired) {
+        cellContainer.classList.add('cell-required');
+      } else {
+        cellContainer.classList.remove('cell-required');
+      }
+    }
+  }
+  
+  // Save to database
+  if (currentSheet.id) {
+    saveCellToDatabase(id, currentSheet.cells[id].prompt, currentSheet.cells[id].output, currentSheet.cells[id].model, currentSheet.cells[id].temperature, currentSheet.cells[id].cellPrompt, currentSheet.cells[id].autoRun, currentSheet.cells[id].interval);
+  }
+}
+
+/**
+ * Update the model for a specific cell (for old select elements)
  * @param {string} id Cell identifier.
  */
 function updateCellModel(id) {
@@ -1175,7 +1836,7 @@ function updateCellModel(id) {
     if (!currentSheet.cells[id]) {
       // Get the default model for new cells
       const defaultModel = getDefaultModel();
-      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false };
+      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false, interval: 0 };
     }
     currentSheet.cells[id].model = modelSelect.value;
     
@@ -1194,7 +1855,7 @@ function updateCellModel(id) {
     
     // Save to database
     if (currentSheet.id) {
-      saveCellToDatabase(id, currentSheet.cells[id].prompt, currentSheet.cells[id].output, currentSheet.cells[id].model, currentSheet.cells[id].temperature, currentSheet.cells[id].cellPrompt);
+      saveCellToDatabase(id, currentSheet.cells[id].prompt, currentSheet.cells[id].output, currentSheet.cells[id].model, currentSheet.cells[id].temperature, currentSheet.cells[id].cellPrompt, currentSheet.cells[id].autoRun || null, currentSheet.cells[id].interval || null);
     }
   }
 }
@@ -1210,13 +1871,13 @@ function updateCellTemperature(id) {
     if (!currentSheet.cells[id]) {
       // Get the default model for new cells
       const defaultModel = getDefaultModel();
-      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false };
+      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false, interval: 0 };
     }
     currentSheet.cells[id].temperature = parseFloat(tempInput.value);
     
     // Save to database
     if (currentSheet.id) {
-      saveCellToDatabase(id, currentSheet.cells[id].prompt, currentSheet.cells[id].output, currentSheet.cells[id].model, currentSheet.cells[id].temperature, currentSheet.cells[id].cellPrompt, currentSheet.cells[id].autoRun);
+      saveCellToDatabase(id, currentSheet.cells[id].prompt, currentSheet.cells[id].output, currentSheet.cells[id].model, currentSheet.cells[id].temperature, currentSheet.cells[id].cellPrompt, currentSheet.cells[id].autoRun, currentSheet.cells[id].interval || 0);
     }
   }
 }
@@ -1232,17 +1893,120 @@ function updateCellAutoRun(id) {
     if (!currentSheet.cells[id]) {
       // Get the default model for new cells
       const defaultModel = getDefaultModel();
-      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false };
+      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false, interval: 0 };
     }
     currentSheet.cells[id].autoRun = autoRunCheckbox.checked;
     
-    console.log(`Cell ${id} auto-run set to:`, autoRunCheckbox.checked);
+    // Update interval timer if needed
+    updateCellIntervalTimer(id);
     
     // Save to database
     if (currentSheet.id) {
-      saveCellToDatabase(id, currentSheet.cells[id].prompt, currentSheet.cells[id].output, currentSheet.cells[id].model, currentSheet.cells[id].temperature, currentSheet.cells[id].cellPrompt, currentSheet.cells[id].autoRun);
+      saveCellToDatabase(id, currentSheet.cells[id].prompt, currentSheet.cells[id].output, currentSheet.cells[id].model, currentSheet.cells[id].temperature, currentSheet.cells[id].cellPrompt, currentSheet.cells[id].autoRun, currentSheet.cells[id].interval);
     }
   }
+}
+
+// Interval timers storage
+const cellIntervalTimers = {};
+
+/**
+ * Update the interval setting for a specific cell
+ * @param {string} id Cell identifier.
+ */
+function updateCellInterval(id) {
+  const intervalInput = document.getElementById('interval-' + id);
+  if (intervalInput) {
+    // Ensure cell exists in currentSheet.cells
+    if (!currentSheet.cells[id]) {
+      const defaultModel = getDefaultModel();
+      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false, interval: 0 };
+    }
+    currentSheet.cells[id].interval = parseInt(intervalInput.value) || 0;
+    
+    // Update interval timer
+    updateCellIntervalTimer(id);
+    
+    // Save to database
+    if (currentSheet.id) {
+      saveCellToDatabase(id, currentSheet.cells[id].prompt, currentSheet.cells[id].output, currentSheet.cells[id].model, currentSheet.cells[id].temperature, currentSheet.cells[id].cellPrompt, currentSheet.cells[id].autoRun, currentSheet.cells[id].interval);
+    }
+  }
+}
+
+/**
+ * Update or start/stop the interval timer for a cell
+ * @param {string} id Cell identifier.
+ */
+function updateCellIntervalTimer(id) {
+  // Clear existing timer
+  if (cellIntervalTimers[id]) {
+    clearInterval(cellIntervalTimers[id]);
+    delete cellIntervalTimers[id];
+  }
+  
+  const cell = currentSheet.cells[id];
+  if (!cell) return;
+  
+  // Only start interval if both autoRun and interval are set
+  if (cell.autoRun && cell.interval && cell.interval > 0) {
+    const intervalMs = cell.interval * 1000; // Convert seconds to milliseconds
+    
+    // Start interval timer
+    cellIntervalTimers[id] = setInterval(async () => {
+      // Run the cell and its dependencies
+      if (cell.prompt && cell.prompt.trim() !== '') {
+        await runCellWithDependencies(id);
+      }
+    }, intervalMs);
+  }
+}
+
+/**
+ * Run a cell and all its dependencies
+ * @param {string} cellId Cell identifier.
+ */
+async function runCellWithDependencies(cellId) {
+  const cell = currentSheet.cells[cellId];
+  if (!cell || !cell.prompt || cell.prompt.trim() === '') return;
+  
+  // Parse dependencies
+  const deps = parseDependencies(cell.prompt);
+  
+  // Run dependencies first (in order)
+  for (const depRef of deps) {
+    // Skip cross-sheet references
+    if (depRef.includes('!')) {
+      continue;
+    }
+    
+    // Extract cell ID from dependency reference
+    // Handle formats like: "A1", "prompt:A1", "output:A1", "A1-1", "A1:1-3", "A1:2"
+    let depId = depRef;
+    
+    // Remove prefixes like "prompt:", "output:"
+    if (depRef.includes(':')) {
+      const parts = depRef.split(':');
+      depId = parts[parts.length - 1];
+    }
+    
+    // Remove generation suffixes like "-1", ":1-3", ":2"
+    if (depId.includes('-')) {
+      depId = depId.split('-')[0];
+    }
+    
+    // Remove any remaining colons (for generation ranges)
+    depId = depId.split(':')[0];
+    
+    const depCell = currentSheet.cells[depId];
+    if (depCell && depCell.prompt && depCell.prompt.trim() !== '') {
+      // Recursively run dependencies
+      await runCellWithDependencies(depId);
+    }
+  }
+  
+  // Run the cell itself
+  await runCell(cellId);
 }
 
 
@@ -1306,9 +2070,7 @@ async function saveColumnName(columnIndex) {
     // Hide input and show alias
     inputField.style.display = 'none';
     aliasSpan.style.display = 'inline-block';
-    
-    console.log(`💾 Saved column ${columnIndex} name: "${newName}"`);
-    
+
     // Save to database
     if (currentSheet.id) {
       await saveSheetColumnNames();
@@ -1348,17 +2110,51 @@ async function saveSheetColumnNames() {
   try {
     const userId = currentUser ? currentUser.uid : 'demo-user-123';
     const projectId = currentProjectId || 'default-project';
-    
-    console.log('💾 Saving column names to database:', currentSheet.columnNames);
-    
+
     await firestoreService.updateSheet(userId, projectId, currentSheet.id, {
       columnNames: currentSheet.columnNames,
       updatedAt: new Date()
     });
-    
-    console.log('✅ Column names saved to database');
+
   } catch (error) {
     console.error('❌ Error saving column names:', error);
+  }
+}
+
+// Debounce timer for saving card positions
+let cardPositionsSaveTimer = null;
+
+/**
+ * Save card positions to the database (debounced)
+ */
+async function saveCardPositions() {
+  try {
+    if (!currentSheet || !currentSheet.id) return;
+    
+    // Clear existing timer
+    if (cardPositionsSaveTimer) {
+      clearTimeout(cardPositionsSaveTimer);
+    }
+    
+    // Debounce: save after 500ms of no changes
+    cardPositionsSaveTimer = setTimeout(async () => {
+      const userId = currentUser ? currentUser.uid : 'demo-user-123';
+      const projectId = currentProjectId || 'default-project';
+      
+      // Update currentSheet.cardPositions with window.cardPositions
+      if (typeof window.cardPositions !== 'undefined') {
+        currentSheet.cardPositions = { ...window.cardPositions };
+      }
+      
+      await firestoreService.updateSheet(userId, projectId, currentSheet.id, {
+        cardPositions: currentSheet.cardPositions,
+        updatedAt: new Date()
+      });
+      
+      cardPositionsSaveTimer = null;
+    }, 500);
+  } catch (error) {
+    // Silently handle error - positions will be saved on next change
   }
 }
 
@@ -1367,8 +2163,7 @@ async function saveSheetColumnNames() {
  */
 async function createDefaultSheetForProject() {
   try {
-    console.log('📄 Creating default sheet for project...');
-    
+
     const userId = currentUser ? currentUser.uid : 'demo-user-123';
     const projectId = currentProjectId || 'default-project';
     
@@ -1377,6 +2172,7 @@ async function createDefaultSheetForProject() {
       name: 'Sheet1',
       numRows: 10,
       numCols: 10,
+      cardPositions: {},
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -1386,8 +2182,7 @@ async function createDefaultSheetForProject() {
     
     if (createResult.success) {
       const sheetId = createResult.sheetId;
-      console.log('✅ Created default sheet with ID:', sheetId);
-      
+
       // Update local sheets array
       const newSheet = {
         id: sheetId,
@@ -1395,7 +2190,8 @@ async function createDefaultSheetForProject() {
         cells: {},
         numRows: defaultSheet.numRows,
         numCols: defaultSheet.numCols,
-        columnNames: {}
+        columnNames: {},
+        cardPositions: {}
       };
       
       sheets = [newSheet];
@@ -1406,9 +2202,7 @@ async function createDefaultSheetForProject() {
       cells = currentSheet.cells;
       numRows = currentSheet.numRows;
       numCols = currentSheet.numCols;
-      
-      console.log('✅ Default sheet created and set as current:', currentSheet);
-      
+
       // Render the grid and update UI
       renderGrid();
       updateSheetTabs();
@@ -1427,13 +2221,11 @@ async function createDefaultSheetForProject() {
  * Ensure the current sheet has a valid ID, create one if needed
  */
 async function ensureSheetHasId() {
-  console.log('🔍 Checking sheet ID - currentSheet:', currentSheet);
-  console.log('🔍 Sheet ID exists:', currentSheet?.id);
-  console.log('🔍 Sheet ID value:', currentSheet?.id || 'null/undefined');
-  
+
+
+
   if (!currentSheet || !currentSheet.id) {
-    console.log('🔧 No currentSheet.id found, creating a default sheet for project...');
-    
+
     // Create a default sheet for the current project
     await createDefaultSheetForProject();
   }
@@ -1444,39 +2236,33 @@ async function ensureSheetHasId() {
  * @param {string} id Cell identifier.
  */
 async function saveCellOnBlur(id) {
-  console.log(`💾 Saving cell ${id} on blur`);
-  console.log(`Current sheet:`, currentSheet);
-  console.log(`Current sheet ID:`, currentSheet?.id || 'null/undefined');
-  console.log(`Current user:`, currentUser);
-  console.log(`Current project ID:`, currentProjectId);
-  
+
+
+
+
+
   // Ensure sheet has an ID
   await ensureSheetHasId();
-  
-  console.log(`After ensureSheetHasId - Current sheet ID:`, currentSheet?.id || 'null/undefined');
-  
+
   const textarea = document.getElementById('prompt-' + id);
   if (textarea && currentSheet && currentSheet.id) {
     // Ensure cell exists in currentSheet.cells
     if (!currentSheet.cells[id]) {
       // Get the default model for new cells
       const defaultModel = getDefaultModel();
-      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false };
+      currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false, interval: 0 };
     }
     
     // Update the cell's prompt with the current textarea value
     currentSheet.cells[id].prompt = textarea.value;
-    
-    console.log(`💾 Saving cell ${id} to Firebase on blur:`, textarea.value);
-    
-    saveCellToDatabase(id, textarea.value, currentSheet.cells[id].output, currentSheet.cells[id].model, currentSheet.cells[id].temperature, currentSheet.cells[id].cellPrompt, currentSheet.cells[id].autoRun)
+
+    saveCellToDatabase(id, textarea.value, currentSheet.cells[id].output, currentSheet.cells[id].model, currentSheet.cells[id].temperature, currentSheet.cells[id].cellPrompt, currentSheet.cells[id].autoRun, currentSheet.cells[id].interval || 0)
       .then((result) => {
-        console.log(`✅ Cell ${id} saved successfully on blur:`, result);
-        
+
         // Fetch the cell from Firebase to ensure display matches database
         fetchCellFromFirebase(id)
           .then(() => {
-            console.log(`✅ Cell ${id} fetched from Firebase after save`);
+
           })
           .catch(error => {
             console.error(`❌ Error fetching cell ${id} from Firebase after save:`, error);
@@ -1486,21 +2272,20 @@ async function saveCellOnBlur(id) {
         console.error(`❌ Error saving cell ${id} to Firebase on blur:`, error);
       });
   } else {
-    console.log(`❌ No currentSheet.id found or textarea not found, skipping Firebase save for cell ${id}`);
-    console.log(`currentSheet:`, currentSheet);
-    console.log(`currentSheet.id:`, currentSheet?.id);
-    console.log(`textarea:`, textarea);
-    
+
+
+
+
     // Still update the cell in memory even if we can't save to Firebase
     if (textarea && currentSheet) {
       if (!currentSheet.cells[id]) {
         // Get the default model from the main selector
         const mainModelSelect = document.getElementById('model-select');
         const defaultModel = mainModelSelect ? mainModelSelect.value : 'gpt-3.5-turbo';
-        currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false };
+        currentSheet.cells[id] = { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '', autoRun: false, interval: 0 };
       }
       currentSheet.cells[id].prompt = textarea.value;
-      console.log(`💾 Updated cell ${id} in memory only:`, textarea.value);
+
     }
   }
 }
@@ -1511,10 +2296,9 @@ async function saveCellOnBlur(id) {
  */
 async function fetchCellFromFirebase(cellId) {
   try {
-    console.log(`Fetching cell ${cellId} from Firebase`);
-    
+
     if (!currentSheet || !currentSheet.id) {
-      console.log(`No currentSheet.id found, skipping fetch for cell ${cellId}`);
+
       return;
     }
 
@@ -1522,7 +2306,7 @@ async function fetchCellFromFirebase(cellId) {
     const projectId = currentProjectId || 'default-project';
     
     if (!userId || !projectId) {
-      console.log(`Missing userId or projectId, skipping fetch for cell ${cellId}`);
+
       return;
     }
 
@@ -1530,8 +2314,7 @@ async function fetchCellFromFirebase(cellId) {
     const result = await firestoreService.getCell(userId, projectId, currentSheet.id, cellId);
     
     if (result.success && result.data) {
-      console.log(`Successfully fetched cell ${cellId} from Firebase:`, result.data);
-      
+
       // Update the cell in memory
       currentSheet.cells[cellId] = {
         prompt: result.data.prompt || '',
@@ -1546,12 +2329,11 @@ async function fetchCellFromFirebase(cellId) {
       const textarea = document.getElementById('prompt-' + cellId);
       if (textarea) {
         textarea.value = result.data.prompt || '';
-        console.log(`Updated textarea for cell ${cellId} with value:`, textarea.value);
-        
+
         // Update the cell's prompt in memory to match what was fetched
         if (currentSheet && currentSheet.cells[cellId]) {
           currentSheet.cells[cellId].prompt = result.data.prompt || '';
-          console.log(`Updated cell ${cellId} prompt in memory:`, currentSheet.cells[cellId].prompt);
+
         }
       }
       
@@ -1559,7 +2341,7 @@ async function fetchCellFromFirebase(cellId) {
       // renderGrid();
       
     } else {
-      console.log(`No data found for cell ${cellId} in Firebase`);
+
     }
     
   } catch (error) {
@@ -1609,9 +2391,33 @@ function showOutput(id) {
 
 /**
  * Update all cell model selectors to use the main model selector's value as default
- * This is called when the grid is rendered or when models are loaded
+ * 
+ * Iterates through all cell model selectors (both old select elements and
+ * new custom dropdown buttons) and updates them to use the main model selector's
+ * value if the cell doesn't have a specific model set.
+ * 
+ * This is called when the grid is rendered or when models are loaded.
+ * 
+ * @returns {void}
  */
 function updateAllCellModelDefaults() {
+  const models = availableModels || window.availableModels || [];
+  if (models.length === 0) return;
+  
+  // Update custom dropdown buttons
+  document.querySelectorAll('.cell-model-button').forEach(button => {
+    const cellId = button.id.replace('model-btn-', '');
+    const cell = currentSheet.cells[cellId];
+    if (cell && cell.model) {
+      const model = models.find(m => m.id === cell.model);
+      const textSpan = button.querySelector('.model-button-text');
+      if (textSpan) {
+        textSpan.textContent = model ? model.name : cell.model;
+      }
+    }
+  });
+  
+  // Update old select elements
   const mainModelSelect = document.getElementById('model-select');
   if (!mainModelSelect) return;
   
@@ -1651,10 +2457,31 @@ function updateAllCellModelDefaults() {
   }
 }
 
+// ============================================================================
+// SECTION 4: DEPENDENCY PARSING
+// ============================================================================
+
 /**
- * Parse dependencies from a prompt. Dependencies are denoted by {{ID}} where ID is another cell identifier.
- * @param {string} prompt The prompt string to parse.
- * @returns {string[]} List of referenced cell IDs.
+ * Parse dependencies from a prompt string
+ * 
+ * Dependencies are denoted by {{ID}} where ID is another cell identifier.
+ * Supports multiple reference formats:
+ * - {{A1}} - just the cell output
+ * - {{prompt:A1}} - the cell's prompt
+ * - {{output:A1}} - the cell's output (explicit)
+ * - {{A1-1}} - first generation of cell A1
+ * - {{A1-2}} - second generation of cell A1
+ * - {{A1:1-3}} - generations 1 to 3 of cell A1
+ * - {{A1:2}} - just generation 2 of cell A1
+ * - {{Sheet2!A1}} - cross-sheet reference
+ * - {{prompt:Sheet2!A1}} - cross-sheet prompt
+ * 
+ * @param {string} prompt - The prompt string to parse
+ * @returns {Array<string>} List of referenced cell IDs/dependencies
+ * 
+ * @example
+ * parseDependencies('Write a poem about {{A1}}') // Returns ['A1']
+ * parseDependencies('{{A1}} and {{B2}}') // Returns ['A1', 'B2']
  */
 function parseDependencies(prompt) {
   // Support multiple reference formats:
@@ -1670,23 +2497,32 @@ function parseDependencies(prompt) {
   const regex = /\{\{([^}]+)\}\}/g;
   const deps = [];
   let match;
-  console.log(`🔍 Parsing dependencies from prompt: "${prompt}"`);
-  console.log(`🔍 Prompt contains {{:`, prompt.includes('{{'));
-  console.log(`🔍 Prompt contains }}:`, prompt.includes('}}'));
   while ((match = regex.exec(prompt)) !== null) {
-    console.log(`🔍 Found dependency: "${match[1]}"`);
     deps.push(match[1]);
   }
-  console.log(`🔍 All dependencies found:`, deps);
   return deps;
 }
 
 /**
  * Resolve a cell reference to get its value, supporting cross-sheet references
+ * 
+ * This function handles various cell reference formats including:
+ * - Simple references: "A1"
+ * - Type-specific: "prompt:A1", "output:A1"
+ * - Generation-specific: "A1-1", "A1:2", "A1:1-3"
+ * - Cross-sheet: "Sheet2!A1", "prompt:Sheet2!A1"
+ * 
+ * @param {string} reference - Cell reference string in various formats
+ * @returns {string} The resolved cell value (prompt, output, or generation content)
+ * 
+ * @example
+ * resolveCellReference('A1') // Returns cell A1's output
+ * resolveCellReference('prompt:A1') // Returns cell A1's prompt
+ * resolveCellReference('A1-1') // Returns first generation of A1
+ * resolveCellReference('Sheet2!A1') // Returns A1 from Sheet2
  */
 function resolveCellReference(reference) {
-  console.log(`🔍 Resolving cell reference: "${reference}"`);
-  
+
   // Parse the reference to determine what to return
   let targetSheet = currentSheet;
   let cellId = reference;
@@ -1702,7 +2538,7 @@ function resolveCellReference(reference) {
       if (parts.length === 2) {
         cellId = parts[0];
         generationSpec = { type: 'single', index: parseInt(parts[1]) - 1 }; // Convert to 0-based index
-        console.log(`🔍 Single generation reference: cell="${cellId}", generation="${parts[1]}"`);
+
       }
     } else if (reference.includes(':')) {
       // Format: A1:1-3 or A1:2
@@ -1714,11 +2550,11 @@ function resolveCellReference(reference) {
           // Format: A1:1-3 (range)
           const [start, end] = genPart.split('-').map(n => parseInt(n) - 1); // Convert to 0-based
           generationSpec = { type: 'range', start, end };
-          console.log(`🔍 Generation range reference: cell="${cellId}", range="${genPart}"`);
+
         } else {
           // Format: A1:2 (single generation)
           generationSpec = { type: 'single', index: parseInt(genPart) - 1 }; // Convert to 0-based
-          console.log(`🔍 Single generation reference: cell="${cellId}", generation="${genPart}"`);
+
         }
       }
     }
@@ -1734,62 +2570,50 @@ function resolveCellReference(reference) {
   // Check if it's a cross-sheet reference (SheetName!CellId or prompt:SheetName!CellId)
   if (cellId.includes('!')) {
     const [sheetName, actualCellId] = cellId.split('!');
-    console.log(`🔍 Cross-sheet reference: sheet="${sheetName}", cell="${actualCellId}", type="${returnType}"`);
-    
+
     // Find the sheet by name
     targetSheet = sheets.find(sheet => sheet.name === sheetName);
     if (!targetSheet) {
-      console.warn(`❌ Sheet "${sheetName}" not found`);
+
       return '[Sheet not found]';
     }
     cellId = actualCellId;
   } else {
-    console.log(`🔍 Current sheet reference: "${cellId}", type="${returnType}"`);
+
   }
   
   // Get the cell from the target sheet
   const cell = targetSheet.cells[cellId];
   if (!cell) {
-    console.warn(`❌ Cell "${cellId}" not found in sheet "${targetSheet.name}"`);
-    console.log(`🔍 Available cells in sheet "${targetSheet.name}":`, Object.keys(targetSheet.cells));
-    console.log(`🔍 All cells in sheet "${targetSheet.name}":`, targetSheet.cells);
+
+
+
     return '[Cell not found]';
   }
   
   // Debug: Log the cell content
-  console.log(`🔍 Cell ${cellId} content:`, {
-    prompt: cell.prompt,
-    output: cell.output,
-    hasPrompt: !!cell.prompt,
-    hasOutput: !!cell.output,
-    promptLength: cell.prompt ? cell.prompt.length : 0,
-    outputLength: cell.output ? cell.output.length : 0,
-    outputPreview: cell.output ? cell.output.substring(0, 100) + '...' : 'none'
-  });
-  
+
   // Return the requested value
   let result;
   
   // Handle generation-specific references
   if (generationSpec) {
-    console.log(`🔍 Processing generation reference for ${cellId}:`, generationSpec);
-    
+
     // Check if cell has generations
     if (!cell.generations || cell.generations.length === 0) {
       result = `[ERROR: Cell ${cellId} has no generations]`;
-      console.warn(`❌ Cell ${cellId} has no generations`);
+
     } else {
-      console.log(`🔍 Cell ${cellId} has ${cell.generations.length} generations`);
-      
+
       if (generationSpec.type === 'single') {
         // Single generation reference (A1-1, A1:2)
         const index = generationSpec.index;
         if (index >= 0 && index < cell.generations.length) {
           result = cell.generations[index].output || '';
-          console.log(`✅ Returning generation ${index + 1} for ${cellId}: "${result}"`);
+
         } else {
           result = `[ERROR: Cell ${cellId} generation ${index + 1} not found (has ${cell.generations.length} generations)]`;
-          console.warn(`❌ Cell ${cellId} generation ${index + 1} not found`);
+
         }
       } else if (generationSpec.type === 'range') {
         // Range generation reference (A1:1-3)
@@ -1797,16 +2621,16 @@ function resolveCellReference(reference) {
         if (start >= 0 && end < cell.generations.length && start <= end) {
           const generations = cell.generations.slice(start, end + 1);
           result = generations.map(gen => gen.output || '').join('\n\n---\n\n');
-          console.log(`✅ Returning generations ${start + 1}-${end + 1} for ${cellId}: "${result}"`);
+
         } else {
           result = `[ERROR: Cell ${cellId} generation range ${start + 1}-${end + 1} not found (has ${cell.generations.length} generations)]`;
-          console.warn(`❌ Cell ${cellId} generation range ${start + 1}-${end + 1} not found`);
+
         }
       }
     }
   } else if (returnType === 'prompt') {
     result = cell.prompt || '';
-    console.log(`✅ Returning prompt for ${cellId}: "${result}"`);
+
   } else {
     // For output, if there's no output but there's a prompt, return the prompt content
     // This handles cases where the cell hasn't been run yet
@@ -1814,7 +2638,7 @@ function resolveCellReference(reference) {
     if (!cell.output || cell.output.trim() === '' || cell.output === 'No generations yet') {
       if (cell.prompt && cell.prompt.trim() !== '') {
         result = cell.prompt;
-        console.log(`⚠️ Cell ${cellId} has no output (or "No generations yet"), returning prompt instead: "${result}"`);
+
       } else {
         // Cell has neither output nor prompt - throw an error
         result = `[ERROR: Cell ${cellId} is completely empty - no prompt or output]`;
@@ -1824,65 +2648,44 @@ function resolveCellReference(reference) {
       // Check if the output contains generation history text (which shouldn't be returned)
       if (cell.output.includes('Generation History:') || cell.output.includes('Latest') && cell.output.includes('PM -')) {
         // This looks like generation history text, not actual output
-        console.warn(`⚠️ Cell ${cellId} output appears to be generation history text, not actual output`);
+
         if (cell.prompt && cell.prompt.trim() !== '') {
           result = cell.prompt;
-          console.log(`⚠️ Returning prompt instead of generation history: "${result}"`);
+
         } else {
           result = `[ERROR: Cell ${cellId} output is generation history, not actual content]`;
           console.error(`❌ Cell ${cellId} output is generation history, not actual content`);
         }
       } else {
         result = cell.output;
-        console.log(`✅ Returning output for ${cellId}: "${result}"`);
+
       }
     }
   }
   
   // Debug: Log the final result
-  console.log(`🔍 Final result for ${cellId}:`, {
-    result: result,
-    resultType: typeof result,
-    resultLength: result ? result.length : 0,
-    isEmpty: !result || result.trim() === '',
-    containsNoGenerations: result && result.includes('No generations yet'),
-    generationSpec: generationSpec
-  });
-  
+
   // Debug: Check if the result is empty or contains "No generations yet"
   if (!result || result.trim() === '') {
-    console.warn(`⚠️ Cell ${cellId} resolved to empty result!`);
+
   }
   if (result && result.includes('No generations yet')) {
-    console.warn(`⚠️ Cell ${cellId} result contains "No generations yet":`, result);
+
   }
-  
-  console.log(`🔍 Referenced cell details:`, {
-    id: cellId,
-    sheet: targetSheet.name,
-    type: returnType,
-    exists: !!cell,
-    prompt: cell?.prompt || 'none',
-    output: cell?.output || 'none',
-    hasOutput: !!cell?.output,
-    outputLength: cell?.output?.length || 0,
-    result: result,
-    fullCellObject: cell
-  });
-  
+
   // Check if the result is "No generations yet" and log a warning
   if (result === 'No generations yet') {
-    console.warn(`⚠️ Cell ${cellId} resolved to "No generations yet" - this should not happen!`);
-    console.warn(`⚠️ Cell ${cellId} prompt:`, cell?.prompt);
-    console.warn(`⚠️ Cell ${cellId} output:`, cell?.output);
+
+
+
   }
   
   // Check if the result is empty or contains "No generations yet"
   if (!result || result.trim() === '') {
-    console.warn(`⚠️ Cell ${cellId} resolved to empty result!`);
+
   }
   if (result && result.includes('No generations yet')) {
-    console.warn(`⚠️ Cell ${cellId} result contains "No generations yet":`, result);
+
   }
   
   return result;
@@ -1890,7 +2693,17 @@ function resolveCellReference(reference) {
 
 /**
  * Use selected generations in the current cell
- * Stores selected generations as references that will be used when the cell is run
+ * 
+ * Collects all checked generation checkboxes from the modal and stores
+ * them as references in the current cell. These selected generations will
+ * be used when the cell is run, allowing users to reference specific
+ * generations from other cells.
+ * 
+ * @returns {void}
+ * 
+ * @example
+ * // User checks generation checkboxes in modal, then calls this function
+ * useSelectedGenerations() // Stores selected generations in currentModalCellId
  */
 function useSelectedGenerations() {
   const checkboxes = document.querySelectorAll('.generation-checkbox:checked');
@@ -1938,7 +2751,7 @@ function useSelectedGenerations() {
     // Save to database
     if (currentSheet.id) {
       const cell = currentSheet.cells[currentModalCellId];
-      saveCellToDatabase(currentModalCellId, cell.prompt, cell.output, cell.model, cell.temperature, cell.cellPrompt, cell.autoRun);
+      saveCellToDatabase(currentModalCellId, cell.prompt, cell.output, cell.model, cell.temperature, cell.cellPrompt, cell.autoRun, cell.interval || 0);
     }
     
     // Highlight selected generations in the modal
@@ -1947,13 +2760,18 @@ function useSelectedGenerations() {
     // Show success message
     const generationRefs = selectedGenerations.map(gen => `${gen.cellId}-${gen.generationNumber}`).join(', ');
     showSuccess(`Selected generations (${generationRefs}) will be used when this cell runs`);
-    
-    console.log('✅ Stored selected generation references:', selectedGenerations);
+
   }
 }
 
 /**
- * Highlight selected generations in the modal
+ * Highlight selected generations in the modal display
+ * 
+ * Visually marks generation checkboxes as checked based on the stored
+ * selectedGenerations array in the current cell.
+ * 
+ * @param {Array<Object>} selectedGenerations - Array of {cellId, generationNumber} objects
+ * @returns {void}
  */
 function highlightSelectedGenerations(selectedGenerations) {
   // Remove any existing highlights
@@ -1975,7 +2793,12 @@ function highlightSelectedGenerations(selectedGenerations) {
 }
 
 /**
- * Clear generation selection
+ * Clear generation selection from the current cell
+ * 
+ * Removes all selected generations from the current modal cell and
+ * unchecks all generation checkboxes in the modal.
+ * 
+ * @returns {void}
  */
 function clearGenerationSelection() {
   const checkboxes = document.querySelectorAll('.generation-checkbox');
@@ -1990,23 +2813,35 @@ function clearGenerationSelection() {
 }
 
 /**
- * Delete a specific generation from a cell
+ * Delete a specific generation from a cell's generation history
+ * 
+ * Removes a generation at the specified index from the cell's generations
+ * array and updates the database. The generation index is 0-based and
+ * refers to the position in the generations array (not the generation number).
+ * If the deleted generation was the latest, updates the cell's output.
+ * 
+ * @param {string} cellId - Cell identifier
+ * @param {number} generationIndex - Zero-based index of generation to delete
+ * @returns {Promise<void>}
+ * 
+ * @example
+ * // Delete the first generation (index 0) from cell A1
+ * await deleteGeneration('A1', 0)
  */
 async function deleteGeneration(cellId, generationIndex) {
   try {
-    console.log(`🗑️ Deleting generation ${generationIndex} from cell ${cellId}`);
-    
+
     // Get the cell
     const cell = currentSheet.cells[cellId];
     if (!cell || !cell.generations || cell.generations.length === 0) {
-      console.warn(`❌ Cell ${cellId} has no generations to delete`);
+
       return;
     }
     
     // Confirm deletion
     const generation = cell.generations[generationIndex];
     if (!generation) {
-      console.warn(`❌ Generation ${generationIndex} not found in cell ${cellId}`);
+
       return;
     }
     
@@ -2033,7 +2868,7 @@ async function deleteGeneration(cellId, generationIndex) {
     
     // Save to database
     if (currentSheet.id) {
-      await saveCellToDatabase(cellId, cell.prompt, cell.output, cell.model, cell.temperature, cell.cellPrompt, cell.autoRun);
+      await saveCellToDatabase(cellId, cell.prompt, cell.output, cell.model, cell.temperature, cell.cellPrompt, cell.autoRun, cell.interval || 0);
     }
     
     // Refresh the modal to show updated generations
@@ -2043,8 +2878,7 @@ async function deleteGeneration(cellId, generationIndex) {
     
     // Update the grid display
     renderGrid();
-    
-    console.log(`✅ Successfully deleted generation ${generationIndex} from cell ${cellId}`);
+
     showSuccess(`Generation deleted successfully!`);
     
   } catch (error) {
@@ -2055,6 +2889,18 @@ async function deleteGeneration(cellId, generationIndex) {
 
 /**
  * Find all cells that depend on a given cell (including cross-sheet dependencies)
+ * 
+ * Scans all cells in all sheets to identify which cells reference
+ * the specified cell in their prompts. Supports various reference formats
+ * including simple references, type-specific references, and generation references.
+ * 
+ * @param {string} cellId - Cell identifier to find dependents for
+ * @returns {Array<string>} Array of cell IDs that depend on the given cell
+ *                          Format: "cellId" for same sheet, "sheetName!cellId" for cross-sheet
+ * 
+ * @example
+ * // Find all cells that reference A1
+ * const dependents = findDependentCells('A1') // Returns ['B2', 'Sheet2!C3']
  */
 function findDependentCells(cellId) {
   const dependentCells = [];
@@ -2087,7 +2933,19 @@ function findDependentCells(cellId) {
 }
 
 /**
- * Run dependent cells in sequence with visual feedback
+ * Run all dependent cells after a cell is updated
+ * 
+ * Recursively runs all cells that depend on the given cell, maintaining
+ * proper execution order. Handles cross-sheet dependencies and provides
+ * visual feedback during execution. Only runs cells with auto-run enabled.
+ * 
+ * @param {string} cellId - Cell identifier that was updated
+ * @param {Array<string>} [executionOrder=[]] - Array to track execution order
+ * @returns {Promise<void>}
+ * 
+ * @example
+ * // After updating cell A1, run all cells that depend on it
+ * await runDependentCells('A1')
  */
 async function runDependentCells(cellId, executionOrder = []) {
   const dependentCells = findDependentCells(cellId);
@@ -2096,7 +2954,7 @@ async function runDependentCells(cellId, executionOrder = []) {
     return;
   }
   
-  console.log(`Cell ${cellId} updated. Found ${dependentCells.length} dependent cells:`, dependentCells);
+  // Cell updated, found dependent cells
   
   // Show execution order to user
   showExecutionOrder(cellId, dependentCells);
@@ -2115,11 +2973,11 @@ async function runDependentCells(cellId, executionOrder = []) {
   });
   
   if (autoRunDependentCells.length === 0) {
-    console.log(`No dependent cells have auto-run enabled for cell ${cellId}`);
+    // No dependent cells have auto-run enabled
     return;
   }
   
-  console.log(`Running ${autoRunDependentCells.length} dependent cells with auto-run enabled:`, autoRunDependentCells);
+  // Running dependent cells with auto-run enabled
   
   // Run each dependent cell in sequence
   for (let i = 0; i < autoRunDependentCells.length; i++) {
@@ -2213,7 +3071,7 @@ async function runCell(id, visited = new Set()) {
   
   // Check if this is an Excel formula first
   if (isFormula(cell.prompt)) {
-    console.log(`📊 Processing Excel formula for ${id}: ${cell.prompt}`);
+
     try {
       const result = parseFormula(cell.prompt);
       cell.output = String(result);
@@ -2232,8 +3090,7 @@ async function runCell(id, visited = new Set()) {
         cellContainer.classList.add('success');
         setTimeout(() => cellContainer.classList.remove('success'), 2000);
       }
-      
-      console.log(`✅ Excel formula result for ${id}: ${result}`);
+
       return; // Exit early for formulas
     } catch (error) {
       console.error(`❌ Excel formula error for ${id}:`, error);
@@ -2248,12 +3105,11 @@ async function runCell(id, visited = new Set()) {
   }
   
   // Resolve dependencies (including cross-sheet references)
-  console.log(`🔍 Cell ${id} prompt:`, cell.prompt);
-  console.log(`🔍 Cell ${id} prompt type:`, typeof cell.prompt);
-  console.log(`🔍 Cell ${id} prompt length:`, cell.prompt ? cell.prompt.length : 0);
+
+
+
   const deps = parseDependencies(cell.prompt);
-  console.log(`Cell ${id} has dependencies:`, deps);
-  
+
   // Handle dependencies - only run cells from current sheet
   for (const depId of deps) {
     // Skip cross-sheet references (they don't need to be run)
@@ -2262,7 +3118,7 @@ async function runCell(id, visited = new Set()) {
     }
     
     if (!currentSheet.cells[depId]) {
-      console.warn(`❌ Referenced cell ${depId} does not exist. Creating empty cell.`);
+
       // Create the cell if it doesn't exist
       // Get the default model for new cells
       const defaultModel = getDefaultModel();
@@ -2280,12 +3136,12 @@ async function runCell(id, visited = new Set()) {
         currentSheet.cells[depId].output = `[ERROR: Cell ${depId} is completely empty - no prompt or output]`;
         console.error(`❌ Cell ${depId} is completely empty - no prompt or output`);
       } else {
-        console.log(`🔄 Cell ${depId} has prompt but no output (or "No generations yet"), running it first...`);
+
       await runCell(depId, visited);
-        console.log(`🔄 Cell ${depId} output after running:`, currentSheet.cells[depId].output);
+
     }
     } else {
-      console.log(`✅ Cell ${depId} already has output:`, currentSheet.cells[depId].output);
+
   }
   }
   
@@ -2301,7 +3157,7 @@ async function runCell(id, visited = new Set()) {
   if (!model || model === '' || !availableModels.find(m => m.id === model)) {
     // Fallback to first available model or default
     const fallbackModel = availableModels.length > 0 ? availableModels[0].id : 'gpt-3.5-turbo';
-    console.log(`⚠️ Invalid model "${model}", using fallback: "${fallbackModel}"`);
+
     finalModel = fallbackModel;
   }
   
@@ -2311,18 +3167,17 @@ async function runCell(id, visited = new Set()) {
   
   // Replace placeholders with actual outputs (including cross-sheet references)
   let processedPrompt = cell.prompt;
-  console.log(`🔄 Original prompt for ${id}:`, processedPrompt);
-  console.log(`🔄 Dependencies found:`, deps);
-  console.log(`🔄 Current sheet cells:`, Object.keys(currentSheet.cells));
-  console.log(`🔄 All cells in current sheet:`, currentSheet.cells);
-  
+
+
+
+
   // Priority-based prompt processing:
   // 1. If selected generations exist, use them with the prompt
   // 2. If no selected generations but cell has value, use cell value with prompt
   // 3. If no selected generations and no cell value, just use the prompt
   
   if (cell.selectedGenerations && cell.selectedGenerations.length > 0) {
-    console.log(`🔍 Cell ${id} has selected generations:`, cell.selectedGenerations);
+
     const selectedGenerationsText = cell.selectedGenerations.map(genRef => {
       const refCell = currentSheet.cells[genRef.cellId];
       if (refCell && refCell.generations && refCell.generations[genRef.generationNumber - 1]) {
@@ -2335,66 +3190,59 @@ async function runCell(id, visited = new Set()) {
     // Use selected generations with the prompt
     if (processedPrompt && processedPrompt.trim() !== '') {
       processedPrompt = `${selectedGenerationsText}\n\n${processedPrompt}`;
-      console.log(`✅ Using selected generations with prompt for ${id}`);
+
     } else {
       // If no prompt, use selected generations as the main content
       processedPrompt = selectedGenerationsText;
-      console.log(`✅ Using selected generations as main content for ${id}`);
+
     }
   } else if (cell.prompt && cell.prompt.trim() !== '') {
-    console.log(`🔍 Cell ${id} has cell value but no selected generations, using cell value with prompt`);
+
     // Use cell value (original prompt) with the new prompt
     if (processedPrompt && processedPrompt.trim() !== '') {
       processedPrompt = `${cell.prompt}\n\n${processedPrompt}`;
-      console.log(`✅ Using cell value with prompt for ${id}`);
+
     } else {
       // If no new prompt, use cell value as the main content
       processedPrompt = cell.prompt;
-      console.log(`✅ Using cell value as main content for ${id}`);
+
     }
   } else {
-    console.log(`🔍 Cell ${id} has no selected generations and no cell value, using prompt only`);
+
   }
   
   // Debug each dependency resolution
   for (const depId of deps) {
-    console.log(`🔍 About to resolve dependency: ${depId}`);
+
     const resolvedValue = resolveCellReference(depId);
-    console.log(`🔍 Resolved value for ${depId}:`, resolvedValue);
+
   }
   
   // Debug specific cells that are being referenced
   for (const depId of deps) {
     if (currentSheet.cells[depId]) {
-      console.log(`🔍 Cell ${depId} details:`, {
-        prompt: currentSheet.cells[depId].prompt,
-        output: currentSheet.cells[depId].output,
-        hasOutput: !!currentSheet.cells[depId].output,
-        outputLength: currentSheet.cells[depId].output?.length || 0
-      });
+
     } else {
-      console.log(`❌ Cell ${depId} does not exist in currentSheet.cells`);
+
     }
   }
   
   for (const depId of deps) {
     const replacement = resolveCellReference(depId);
-    console.log(`🔄 Replacing {{${depId}}} with:`, replacement);
-    console.log(`🔄 Replacement type:`, typeof replacement);
-    console.log(`🔄 Replacement length:`, replacement ? replacement.length : 0);
-    
+
+
+
     // Replace all occurrences of the placeholder
     const beforeReplace = processedPrompt;
     processedPrompt = processedPrompt.split('{{' + depId + '}}').join(replacement);
-    console.log(`🔄 Before: "${beforeReplace}"`);
-    console.log(`🔄 After: "${processedPrompt}"`);
+
+
   }
   
   // For image generation (DALL-E), if the processed prompt is empty or contains error messages, use the cell's content
   if ((processedPrompt.trim() === '' || processedPrompt.includes('[ERROR:') || processedPrompt.includes('No generations yet')) && (finalModel === 'dall-e-2' || finalModel === 'dall-e-3')) {
-    console.log(`🖼️ Empty or error prompt for image generation, using cell content as prompt`);
-    console.log(`🖼️ Cell data:`, { prompt: cell.prompt, output: cell.output, cellPrompt: cell.cellPrompt });
-    
+
+
     // Check if cell has any content
     const cellContent = cell.prompt || cell.output || cell.cellPrompt;
     if (!cellContent || cellContent.trim() === '') {
@@ -2404,21 +3252,20 @@ async function runCell(id, visited = new Set()) {
     }
     
     processedPrompt = cellContent;
-    console.log(`🖼️ Using cell content as prompt: "${processedPrompt}"`);
+
   }
   
   // Final check: ensure we have a valid prompt for DALL-E
   if ((finalModel === 'dall-e-2' || finalModel === 'dall-e-3') && (processedPrompt.trim() === '' || processedPrompt.includes('[ERROR:'))) {
-    console.log(`🖼️ Still empty or error prompt for DALL-E, using fallback`);
+
     processedPrompt = 'Generate an image';
-    console.log(`🖼️ Using fallback prompt: "${processedPrompt}"`);
+
   }
   
   // Debug: Log the final prompt before sending to API
-  console.log(`🔍 Final prompt before API call: "${processedPrompt}"`);
-  console.log(`🔍 Final model: ${finalModel}`);
-  console.log(`🔍 Prompt length: ${processedPrompt.length}`);
-  
+
+
+
   // Final validation: ensure we have a valid prompt
   if (processedPrompt.trim() === '' || processedPrompt.includes('[ERROR:')) {
     console.error(`❌ Invalid prompt for API call: "${processedPrompt}"`);
@@ -2428,21 +3275,19 @@ async function runCell(id, visited = new Set()) {
   
   // If no dependencies were found, log that
   if (deps.length === 0) {
-    console.log(`⚠️ No dependencies found in prompt: "${cell.prompt}"`);
+
   }
-  
-  console.log(`✅ Final processed prompt for ${id}:`, processedPrompt);
+
   // Check if it's an Excel formula
   if (processedPrompt.startsWith('=')) {
     cell.output = parseFormula(processedPrompt);
   } else {
-    console.log(`🔍 Cell ${id} model debugging:`);
-    console.log(`🔍 modelSelect element:`, modelSelect);
-    console.log(`🔍 modelSelect value:`, modelSelect ? modelSelect.value : 'not found');
-    console.log(`🔍 cell.model:`, cell.model);
-    console.log(`🔍 final model:`, finalModel);
-    console.log(`🔍 available models:`, availableModels.map(m => m.id));
-    
+
+
+
+
+
+
   try {
     // Show loading state
     const outDiv = document.getElementById('output-' + id);
@@ -2463,15 +3308,6 @@ async function runCell(id, visited = new Set()) {
     // Get the original model ID for API calls (for OpenRouter models)
     const selectedModel = availableModels.find(m => m.id === finalModel);
     const modelForApi = selectedModel ? (selectedModel.originalId || selectedModel.id) : finalModel;
-    
-    console.log(`🔍 Making API request to /api/llm with:`, {
-      prompt: processedPrompt,
-      model: modelForApi,
-      modelId: finalModel,
-      originalId: selectedModel?.originalId,
-      temperature: temperature,
-      hasToken: !!tokenResult.token
-    });
 
     // Try server API first, fallback to client-side AI
     let content;
@@ -2484,8 +3320,6 @@ async function runCell(id, visited = new Set()) {
         },
         body: JSON.stringify({ prompt: processedPrompt, model: modelForApi, temperature }),
       });
-      
-      console.log(`🔍 API response status:`, response.status, response.statusText);
 
       if (!response.ok) {
         throw new Error(`Server API Error ${response.status}: ${response.statusText}`);
@@ -2499,13 +3333,12 @@ async function runCell(id, visited = new Set()) {
 
       content = data.text || '';
     } catch (serverError) {
-      console.log('🔄 Server API failed:', serverError.message);
+
       throw new Error(`Server unavailable: ${serverError.message}`);
     }
     
     cell.output = content;
-    console.log(`🔍 Setting cell ${id} output to:`, cell.output);
-    
+
     // Log this generation
     const generation = {
       timestamp: new Date().toISOString(),
@@ -2515,25 +3348,17 @@ async function runCell(id, visited = new Set()) {
       output: cell.output,
       type: getMediaType(cell.output)
     };
-    
-    console.log(`🔍 Creating generation for cell ${id}:`, generation);
-    
+
     // Initialize generations array if it doesn't exist
     if (!cell.generations) {
       cell.generations = [];
-      console.log(`🔍 Initialized generations array for cell ${id}`);
+
     }
     cell.generations.push(generation);
-    console.log(`🔍 Added generation to cell ${id}. Total generations: ${cell.generations.length}`);
-    console.log(`🔍 All generations for cell ${id}:`, cell.generations);
-    
+
+
     // Test: Check if the generation was actually added
-    console.log(`🔍 Verification - cell ${id} generations after push:`, {
-      length: cell.generations.length,
-      lastGeneration: cell.generations[cell.generations.length - 1],
-      allGenerations: cell.generations
-    });
-    
+
     // Check if the output is an image URL, audio, or text and render accordingly
     if (isImageUrl(cell.output)) {
       renderImageOutput(id, cell.output);
@@ -2585,7 +3410,7 @@ async function runCell(id, visited = new Set()) {
   
   // Save to database
   if (currentSheet.id) {
-    saveCellToDatabase(id, cell.prompt, cell.output, cell.model, cell.temperature);
+    saveCellToDatabase(id, cell.prompt, cell.output, cell.model, cell.temperature, cell.cellPrompt || null, cell.autoRun || null, cell.interval || null);
   }
   
   // Run dependent cells after this cell is updated
@@ -2615,9 +3440,7 @@ async function runAll() {
     showSuccess('No cells with prompts found to run');
     return;
   }
-  
-  console.log(`Running ${filledCells.length} filled cells in batch mode`);
-  
+
   // Show batch execution notification
   showBatchExecutionStart(filledCells.length);
   
@@ -2682,6 +3505,12 @@ let highlightedColumns = new Set();
 
 /**
  * Handle cell selection (Excel-like behavior)
+ * 
+ * Selects a cell, removes previous selection, focuses the textarea,
+ * shows the output, and updates the status indicator.
+ * 
+ * @param {string} cellId - Cell identifier to select
+ * @returns {void}
  */
 function selectCell(cellId) {
   // Remove previous selection
@@ -2714,7 +3543,14 @@ function selectCell(cellId) {
 }
 
 /**
- * Add keyboard navigation (Excel-like)
+ * Handle keyboard navigation (Excel-like)
+ * 
+ * Provides arrow key navigation between cells, Enter/Tab for next cell,
+ * Delete/Backspace for clearing cells, and Ctrl+Z/Y for undo/redo.
+ * Does not handle navigation when modal is open or for card textareas.
+ * 
+ * @param {KeyboardEvent} event - Keyboard event object
+ * @returns {void}
  */
 function handleKeyNavigation(event) {
   // Don't handle navigation if modal is open or if target is modal textarea
@@ -2725,6 +3561,11 @@ function handleKeyNavigation(event) {
   
   // Don't handle navigation if the target is the modal textarea
   if (event.target && event.target.id === 'modalPrompt') {
+    return;
+  }
+  
+  // Don't handle navigation for card textareas - cards don't need cell navigation
+  if (event.target && event.target.closest('.card')) {
     return;
   }
   
@@ -2820,7 +3661,7 @@ function handleKeyNavigation(event) {
           }
           // Save to database
           if (currentSheet.id) {
-            saveCellToDatabase(selectedCell, '', '', cell.model, cell.temperature);
+            saveCellToDatabase(selectedCell, '', '', cell.model, cell.temperature, cell.cellPrompt || null, cell.autoRun || null, cell.interval || null);
           }
         }
       }
@@ -2835,6 +3676,15 @@ function handleKeyNavigation(event) {
 
 /**
  * Parse cell ID to get column and row indices
+ * 
+ * Converts a cell ID (e.g., "A1") to zero-based column and row indices.
+ * 
+ * @param {string} cellId - Cell identifier (e.g., "A1", "B2")
+ * @returns {Array<number>} [columnIndex, rowIndex] - Zero-based indices
+ * 
+ * @example
+ * parseCellId('A1') // Returns [0, 0]
+ * parseCellId('B2') // Returns [1, 1]
  */
 function parseCellId(cellId) {
   const col = cellId.charCodeAt(0) - 65;
@@ -2843,7 +3693,12 @@ function parseCellId(cellId) {
 }
 
 /**
- * Add loading state to the grid
+ * Set loading state for the grid container
+ * 
+ * Adds or removes the 'loading' CSS class to show/hide loading indicators.
+ * 
+ * @param {boolean} loading - Whether to show loading state
+ * @returns {void}
  */
 function setLoadingState(loading) {
   const gridContainer = document.querySelector('.grid-container');
@@ -2856,6 +3711,12 @@ function setLoadingState(loading) {
 
 /**
  * Toggle row highlighting
+ * 
+ * Adds or removes a row from the highlighted rows set and updates
+ * the visual highlighting in the UI.
+ * 
+ * @param {number} rowIndex - Zero-based row index to toggle
+ * @returns {void}
  */
 function toggleRowHighlight(rowIndex) {
   if (highlightedRows.has(rowIndex)) {
@@ -2868,6 +3729,12 @@ function toggleRowHighlight(rowIndex) {
 
 /**
  * Toggle column highlighting
+ * 
+ * Adds or removes a column from the highlighted columns set and updates
+ * the visual highlighting in the UI.
+ * 
+ * @param {number} columnIndex - Zero-based column index to toggle
+ * @returns {void}
  */
 function toggleColumnHighlight(columnIndex) {
   if (highlightedColumns.has(columnIndex)) {
@@ -2879,7 +3746,12 @@ function toggleColumnHighlight(columnIndex) {
 }
 
 /**
- * Update row highlighting in the DOM
+ * Update row highlighting in the UI
+ * 
+ * Applies the 'row-highlighted' CSS class to all rows that are in
+ * the highlightedRows set. Also highlights row headers.
+ * 
+ * @returns {void}
  */
 function updateRowHighlighting() {
   // Remove all row highlighting
@@ -2910,7 +3782,13 @@ function updateRowHighlighting() {
 }
 
 /**
- * Update column highlighting in the DOM
+ * Update column highlighting in the UI
+ * 
+ * Applies the 'header-highlighted' CSS class to all column headers
+ * and 'column-highlighted' to all cells in columns that are in
+ * the highlightedColumns set.
+ * 
+ * @returns {void}
  */
 function updateColumnHighlighting() {
   // Remove all column highlighting
@@ -2941,7 +3819,12 @@ function updateColumnHighlighting() {
 }
 
 /**
- * Clear all highlighting
+ * Clear all row and column highlighting
+ * 
+ * Removes all rows and columns from their respective highlight sets
+ * and updates the UI to reflect the changes.
+ * 
+ * @returns {void}
  */
 function clearAllHighlighting() {
   highlightedRows.clear();
@@ -3472,7 +4355,18 @@ document.addEventListener('DOMContentLoaded', function() {
   checkAuthentication();
 });
 
-// Check if user is authenticated
+// ============================================================================
+// SECTION 10: AUTHENTICATION AND INITIALIZATION
+// ============================================================================
+
+/**
+ * Check if user is authenticated and initialize the application
+ * 
+ * Sets up authentication state listener and initializes the app
+ * when a user is authenticated.
+ * 
+ * @returns {Promise<void>}
+ */
 async function checkAuthentication() {
   try {
     // Show loading state
@@ -3489,14 +4383,13 @@ async function checkAuthentication() {
         
         // Check if user is admin
         isAdmin = await authService.isCurrentUserAdmin();
-        console.log('User authenticated:', user.email, 'Admin:', isAdmin);
-        
+
         // If user is admin, show admin button
         if (isAdmin) {
           const adminBtn = document.getElementById('adminButton');
           if (adminBtn) {
             adminBtn.style.display = 'inline-block';
-            console.log('✅ Admin button shown for admin user');
+
           }
         }
         
@@ -3505,7 +4398,7 @@ async function checkAuthentication() {
         currentUser = null;
         isAuthenticated = false;
         isAdmin = false;
-        console.log('User not authenticated, using demo mode...');
+
         // For demo purposes, initialize without authentication
         await initializeApp();
       }
@@ -3519,8 +4412,7 @@ async function checkAuthentication() {
 // Initialize the application after authentication
 async function initializeApp() {
   try {
-    console.log('🚀 Initializing GPT Cells app...');
-    
+
     // Show loading state
     const gridContainer = document.getElementById('grid');
     if (gridContainer) {
@@ -3528,18 +4420,17 @@ async function initializeApp() {
     }
 
     // Check Firebase services
-    console.log('🔍 Checking Firebase services...');
-    console.log('firestoreService available:', typeof firestoreService !== 'undefined');
-    console.log('db available:', typeof db !== 'undefined');
-    console.log('auth available:', typeof auth !== 'undefined');
-    
+
+
+
+
     // Wait for firestoreService to be available
     if (typeof firestoreService === 'undefined') {
-      console.log('⏳ Waiting for firestoreService to load...');
+
       // Wait a bit and try again
       setTimeout(() => {
         if (typeof firestoreService !== 'undefined') {
-          console.log('✅ firestoreService loaded, continuing...');
+
           initializeApp();
         } else {
           console.error('❌ firestoreService still not available after timeout');
@@ -3559,7 +4450,7 @@ async function initializeApp() {
     const urlParams = new URLSearchParams(window.location.search);
     const requestedProjectId = urlParams.get('project');
     if (requestedProjectId) {
-      console.log('📁 Requested project ID from URL:', requestedProjectId);
+
       currentProjectId = requestedProjectId;
     }
     
@@ -3568,9 +4459,7 @@ async function initializeApp() {
     
     // Grid is already rendered by loadProjectsFromDatabase()
     updateSheetTabs();
-    
-    console.log('GPT Cells application initialized successfully');
-    
+
     // Load available models
     loadAvailableModels();
     
@@ -3604,7 +4493,12 @@ function updateUserInterface() {
 // Load user profile data
 async function loadUserProfile() {
   try {
-    if (!currentUser) return;
+    if (!currentUser || !currentUser.uid) {
+      // Set default values if no user
+      const profileEmail = document.getElementById('profileEmail');
+      if (profileEmail) profileEmail.textContent = 'Unknown';
+      return;
+    }
     
     // Get user document from Firestore
     const userDoc = await firestoreService.getUserProfile(currentUser.uid);
@@ -3618,17 +4512,19 @@ async function loadUserProfile() {
       const profilePlan = document.getElementById('profilePlan');
       const profileUsage = document.getElementById('profileUsage');
       
-      if (profileEmail) profileEmail.textContent = userData.email || currentUser.email;
-      if (profileName) profileName.textContent = userData.displayName || 'Not set';
-      if (profileCreatedAt) profileCreatedAt.textContent = userData.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'Unknown';
-      if (profilePlan) {
-        profilePlan.textContent = userData.subscription || 'Free';
-        profilePlan.className = userData.subscription === 'pro' ? 'plan-badge pro' : 'plan-badge';
+      if (profileEmail) {
+        profileEmail.textContent = userData?.email || currentUser?.email || 'Unknown';
       }
-      if (profileUsage) profileUsage.textContent = `${userData.usage?.apiCalls || 0} / ${userData.subscription === 'pro' ? 'Unlimited' : '100'}`;
+      if (profileName) profileName.textContent = userData?.displayName || 'Not set';
+      if (profileCreatedAt) profileCreatedAt.textContent = userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'Unknown';
+      if (profilePlan) {
+        profilePlan.textContent = userData?.subscription || 'Free';
+        profilePlan.className = userData?.subscription === 'pro' ? 'plan-badge pro' : 'plan-badge';
+      }
+      if (profileUsage) profileUsage.textContent = `${userData?.usage?.apiCalls || 0} / ${userData?.subscription === 'pro' ? 'Unlimited' : '100'}`;
     }
   } catch (error) {
-    console.error('Error loading user profile:', error);
+    // Silently handle error - user profile is optional
   }
 }
 
@@ -3701,6 +4597,58 @@ function closeUsage() {
   if (modal) {
     modal.style.display = 'none';
   }
+}
+
+// Handler functions for profile dropdown links
+function handleProfileClick(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown) {
+    dropdown.style.display = 'none';
+  }
+  showProfile();
+}
+
+function handleSettingsClick(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown) {
+    dropdown.style.display = 'none';
+  }
+  showSettings();
+}
+
+function handleUsageClick(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown) {
+    dropdown.style.display = 'none';
+  }
+  showUsage();
+}
+
+function handleAdminClick(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown) {
+    dropdown.style.display = 'none';
+  }
+  // Navigate to admin dashboard
+  window.location.href = '/admin.html';
+}
+
+function handleLogoutClick(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown) {
+    dropdown.style.display = 'none';
+  }
+  logout();
 }
 
 // Load user settings
@@ -3861,16 +4809,14 @@ async function logout() {
 // Admin functions
 async function makeCurrentUserAdmin() {
   try {
-    console.log('🔧 Making current user admin...');
-    
+
     const result = await authService.makeCurrentUserAdmin();
     if (result.success) {
       isAdmin = true;
       showSuccess('You are now an admin! Admin privileges granted.');
-      console.log('✅ User is now admin');
-      
+
       // Add admin button to UI if it doesn't exist
-      addAdminButton();
+      addAdminLink();
     } else {
       showError('Failed to make user admin: ' + result.error);
       console.error('❌ Failed to make user admin:', result.error);
@@ -3883,29 +4829,27 @@ async function makeCurrentUserAdmin() {
 
 // Add admin link to the user dropdown
 function addAdminLink() {
-  console.log('🔧 Attempting to show admin link in dropdown...');
-  
+
   // Find the admin link in the dropdown
   const adminLink = document.getElementById('adminLink');
   
   if (adminLink) {
     // Show the admin link
     adminLink.style.display = 'block';
-    console.log('✅ Admin link is now visible in dropdown');
+
   } else {
-    console.log('❌ Admin link not found in dropdown');
+
   }
 }
 
 // Check admin status and add link if needed
 function checkAdminStatus() {
-  console.log('🔍 Checking admin status:', { isAdmin, currentUser: currentUser?.email });
-  
+
   if (isAdmin) {
-    console.log('✅ User is admin, showing admin link in dropdown...');
+
     addAdminLink();
   } else {
-    console.log('❌ User is not admin, admin link not shown');
+
   }
 }
 
@@ -3914,8 +4858,7 @@ function checkAdminStatus() {
  */
 async function loadProjectsFromDatabase() {
   try {
-    console.log('🔄 Loading projects from database...');
-    
+
     // Check if Firebase services are available
     if (typeof firestoreService === 'undefined') {
       console.error('❌ firestoreService not available');
@@ -3924,11 +4867,9 @@ async function loadProjectsFromDatabase() {
     
     // Use demo user ID for testing (since we migrated demo data)
     const userId = currentUser ? currentUser.uid : 'demo-user-123';
-    console.log('👤 Using user ID:', userId);
-    
+
     const result = await firestoreService.getProjects(userId);
-    console.log('📊 Projects result:', result);
-    
+
     if (result.success && result.projects.length > 0) {
       projects = result.projects;
       
@@ -3936,7 +4877,7 @@ async function loadProjectsFromDatabase() {
       if (currentProjectId) {
         currentProject = projects.find(p => p.id === currentProjectId);
         if (!currentProject) {
-          console.warn('⚠️ Requested project not found, using first project');
+
           currentProject = projects[0];
           currentProjectId = currentProject.id;
         }
@@ -3944,18 +4885,15 @@ async function loadProjectsFromDatabase() {
         currentProject = projects[0];
         currentProjectId = currentProject.id;
       }
-      
-      console.log('✅ Loaded projects:', projects.length);
-      console.log('📊 Current project:', currentProject.name);
-      console.log('📊 Project default model:', currentProject.defaultModel || 'none');
-      console.log('📊 Full current project object:', currentProject);
-      
+
+
+
+
       // Load sheets for the current project
       await loadSheetsFromDatabase();
       
     } else {
-      console.log('📝 No projects found, creating default project...');
-      
+
       // Create a default project
       const defaultProject = {
         name: 'My First Project',
@@ -3969,9 +4907,7 @@ async function loadProjectsFromDatabase() {
         currentProjectId = createResult.projectId;
         currentProject = { id: createResult.projectId, ...defaultProject };
         projects = [currentProject];
-        
-        console.log('✅ Created default project:', currentProject.name);
-        
+
         // Create a default sheet for the new project
         await createDefaultSheetForProject();
       } else {
@@ -3990,8 +4926,7 @@ async function loadProjectsFromDatabase() {
  */
 async function loadSheetsFromDatabase() {
   try {
-    console.log('🔄 Loading sheets from database...');
-    
+
     // Check if Firebase services are available
     if (typeof firestoreService === 'undefined') {
       console.error('❌ firestoreService not available');
@@ -4001,12 +4936,10 @@ async function loadSheetsFromDatabase() {
     // Use demo user ID for testing (since we migrated demo data)
     const userId = currentUser ? currentUser.uid : 'demo-user-123';
     const projectId = currentProjectId || 'default-project';
-    console.log('👤 Using user ID:', userId);
-    console.log('📁 Using project ID:', projectId);
-    
+
+
     const result = await firestoreService.getSheets(userId, projectId);
-    console.log('📊 Sheets result:', result);
-    
+
     if (result.success && result.sheets.length > 0) {
       // Update sheets array
       sheets = result.sheets.map(sheet => ({
@@ -4015,19 +4948,27 @@ async function loadSheetsFromDatabase() {
         cells: {},
         numRows: sheet.numRows || 10,
         numCols: sheet.numCols || 10,
-        columnNames: sheet.columnNames || {}
+        columnNames: sheet.columnNames || {},
+        cardPositions: sheet.cardPositions || {}
       }));
       
       // Load first sheet
       if (sheets.length > 0) {
         currentSheetIndex = 0;
         currentSheet = sheets[currentSheetIndex];
-        console.log('📊 Loaded sheet from database:', currentSheet);
-        console.log('📊 Sheet ID from database:', currentSheet?.id || 'null/undefined');
-        
+
+
         // Update global variables with loaded dimensions
         numRows = currentSheet.numRows;
         numCols = currentSheet.numCols;
+        
+        // Load card positions from sheet
+        if (currentSheet.cardPositions) {
+          window.cardPositions = currentSheet.cardPositions;
+        } else {
+          window.cardPositions = {};
+        }
+        
         await loadSheetCells(currentSheet.id);
         loadProjectTitle();
 renderGrid();
@@ -4035,20 +4976,20 @@ renderGrid();
       }
     } else {
       // No sheets found in Firestore, create a default sheet for this project
-      console.log('📄 No sheets found in Firestore, creating default sheet for project...');
+
       await createDefaultSheetForProject();
     }
   } catch (error) {
     console.error('Error loading sheets:', error);
     // Try loading from localStorage
-    console.log('Firestore failed, trying localStorage...');
+
     if (loadSheetsFromLocalStorage()) {
       loadProjectTitle();
       renderGrid();
       updateSheetTabs();
     } else {
       // Fallback: create a default sheet for this project
-      console.log('📄 Creating default sheet as fallback...');
+
       await createDefaultSheetForProject();
     }
   }
@@ -4072,10 +5013,9 @@ async function loadSheetsFromFirestore() {
       cells = currentSheet.cells || {};
       numRows = currentSheet.numRows || 10;
       numCols = currentSheet.numCols || 10;
-      
-      console.log('Sheets loaded from Firestore:', sheets.length);
+
     } else {
-      console.warn('No sheets found in Firestore, creating default sheet');
+
       // Create default sheet in Firestore
       await createDefaultSheet();
     }
@@ -4096,7 +5036,8 @@ async function createDefaultSheet() {
       name: 'Sheet1',
       numRows: 10,
       numCols: 10,
-      cells: {}
+      cells: {},
+      cardPositions: {}
     };
 
     const projectId = currentProjectId || 'default-project';
@@ -4104,7 +5045,7 @@ async function createDefaultSheet() {
     if (result.success) {
       sheets[0].id = result.sheetId;
       currentSheet = sheets[0];
-      console.log('Default sheet created in Firestore');
+
     }
   } catch (error) {
     console.error('Error creating default sheet:', error);
@@ -4113,6 +5054,11 @@ async function createDefaultSheet() {
 
 /**
  * Load and set the project title from current sheet
+ * 
+ * Updates both the page title and the project title element in the UI
+ * with the current sheet's name.
+ * 
+ * @returns {void}
  */
 function loadProjectTitle() {
   if (currentSheet && currentSheet.name) {
@@ -4127,11 +5073,20 @@ function loadProjectTitle() {
 }
 
 /**
- * Load cells for a specific sheet
+ * Load cells for a specific sheet from Firestore
+ * 
+ * Fetches all cell data for the given sheet from Firestore and populates
+ * the currentSheet.cells object. Handles generation history and ensures
+ * all cards have ports after loading.
+ * 
+ * @param {string} sheetId - Sheet identifier to load cells for
+ * @returns {Promise<void>}
+ * 
+ * @throws {Error} If loading fails
  */
 async function loadSheetCells(sheetId) {
   try {
-    console.log(`🔄 Loading cells for sheet ${sheetId}`);
+
     const userId = currentUser ? currentUser.uid : 'demo-user-123';
     const projectId = currentProjectId || 'default-project';
     
@@ -4154,38 +5109,29 @@ async function loadSheetCells(sheetId) {
           temperature: cellData.temperature !== undefined ? cellData.temperature : 0.7,
           cellPrompt: cellData.cellPrompt || '',
           autoRun: cellData.autoRun || false,
+          interval: cellData.interval || 0,
           generations: cellData.generations || []
         };
-        
-        console.log(`🔍 Loading cell ${doc.id} from Firestore:`, {
-          hasGenerations: !!cellData.generations,
-          generationsLength: cellData.generations ? cellData.generations.length : 0,
-          generationsData: cellData.generations,
-          cellData: cellData
-        });
-        
+
         currentSheet.cells[doc.id] = cell;
       });
-      console.log('✅ Loaded cells from Firestore:', currentSheet.cells);
-      
+
       // Debug specific cell A1 if it exists
       if (currentSheet.cells['A1']) {
-        console.log('🔍 Cell A1 loaded from Firestore:', {
-          prompt: currentSheet.cells['A1'].prompt,
-          output: currentSheet.cells['A1'].output,
-          hasOutput: !!currentSheet.cells['A1'].output,
-          outputLength: currentSheet.cells['A1'].output?.length || 0,
-          generations: currentSheet.cells['A1'].generations?.length || 0,
-          generationsData: currentSheet.cells['A1'].generations
-        });
+
       } else {
-        console.log('❌ Cell A1 not found in loaded cells');
+
       }
       
       // Re-render the grid to show the loaded cells
       renderGrid();
+      
+      // Ensure all cards have ports after loading
+      setTimeout(() => {
+        ensureAllCardPorts();
+      }, 100);
     } else {
-      console.log('No cells found in Firestore for sheet', sheetId);
+
       // Initialize empty cells if none found
       currentSheet.cells = {};
     }
@@ -4195,9 +5141,24 @@ async function loadSheetCells(sheetId) {
 }
 
 /**
- * Save cell to database
+ * Save cell data to Firestore database
+ * 
+ * Persists cell data including prompt, output, model settings, and generation
+ * history to Firestore. Ensures the sheet has an ID before saving.
+ * 
+ * @param {string} cellId - Cell identifier
+ * @param {string} prompt - Cell prompt text
+ * @param {string} output - Cell output text
+ * @param {string|null} [model=null] - AI model ID (uses current if null)
+ * @param {number|null} [temperature=null] - Temperature setting (uses current if null)
+ * @param {string|null} [cellPrompt=null] - Cell prompt template (uses current if null)
+ * @param {boolean|null} [autoRun=null] - Auto-run setting (uses current if null)
+ * @param {number|null} [interval=null] - Run interval in seconds (uses current if null)
+ * @returns {Promise<void>}
+ * 
+ * @throws {Error} If save operation fails
  */
-async function saveCellToDatabase(cellId, prompt, output, model = null, temperature = null, cellPrompt = null, autoRun = null) {
+async function saveCellToDatabase(cellId, prompt, output, model = null, temperature = null, cellPrompt = null, autoRun = null, interval = null) {
   try {
     // Ensure sheet has an ID before saving
     await ensureSheetHasId();
@@ -4207,35 +5168,20 @@ async function saveCellToDatabase(cellId, prompt, output, model = null, temperat
     const currentTemperature = temperature !== null ? temperature : parseFloat(document.getElementById('temp-input')?.value || 0.7);
     const currentCellPrompt = cellPrompt !== null ? cellPrompt : (currentSheet.cells[cellId]?.cellPrompt || '');
     const currentAutoRun = autoRun !== null ? autoRun : (currentSheet.cells[cellId]?.autoRun || false);
+    const currentInterval = interval !== null ? interval : (currentSheet.cells[cellId]?.interval || 0);
     
     const userId = currentUser ? currentUser.uid : 'demo-user-123';
     const projectId = currentProjectId || 'default-project';
-    
-    console.log(`🔍 Saving cell ${cellId} to database:`, { prompt, output, model, temperature, cellPrompt, autoRun });
-    console.log(`🔍 Current sheet ID:`, currentSheet.id);
-    console.log(`🔍 User ID:`, userId);
-    console.log(`🔍 Project ID:`, projectId);
-    console.log(`🔍 Current sheet object:`, currentSheet);
-    
+
+
+
+
+
     // Get generations from the cell
     const generations = currentSheet.cells[cellId]?.generations || [];
-    console.log(`🔍 Saving generations for cell ${cellId}:`, generations);
-    
+
     // Save to Firestore
-    console.log(`Calling firestoreService.saveCell with:`, {
-      userId, projectId, sheetId: currentSheet.id, cellId,
-      cellData: {
-        prompt: prompt,
-        output: output,
-        model: currentModel,
-        temperature: currentTemperature,
-        cellPrompt: currentCellPrompt,
-        autoRun: currentAutoRun,
-        generations: generations,
-        updatedAt: new Date()
-      }
-    });
-    
+
     const cellData = {
       prompt: prompt,
       output: output,
@@ -4243,25 +5189,28 @@ async function saveCellToDatabase(cellId, prompt, output, model = null, temperat
       temperature: currentTemperature,
       cellPrompt: currentCellPrompt,
       autoRun: currentAutoRun,
+      interval: currentInterval,
       generations: generations,
       updatedAt: new Date()
     };
-    
-    console.log(`🔍 Full cell data being saved for ${cellId}:`, cellData);
-    console.log(`🔍 Generations array length:`, generations.length);
-    console.log(`🔍 Generations array content:`, generations);
-    
+
+
+
     const result = await firestoreService.saveCell(userId, projectId, currentSheet.id, cellId, cellData);
-    
-    console.log(`Firestore save result:`, result);
-    console.log(`✅ Successfully saved cell ${cellId} to database`);
+
+
   } catch (error) {
     console.error('❌ Error saving cell:', error);
   }
 }
 
 /**
- * Save sheet dimensions to database
+ * Save sheet dimensions (rows and columns) to Firestore
+ * 
+ * Updates the sheet's numRows and numCols in Firestore. Falls back to
+ * localStorage if Firestore update fails.
+ * 
+ * @returns {Promise<void>}
  */
 async function saveSheetDimensions() {
   if (currentSheet.id) {
@@ -4274,19 +5223,25 @@ async function saveSheetDimensions() {
         numCols: currentSheet.numCols,
         updatedAt: new Date()
       });
-      
-      console.log('Sheet dimensions saved to Firestore');
+
     } catch (error) {
       console.error('Error saving sheet dimensions:', error);
       // Fallback to localStorage
       saveSheetsToLocalStorage();
-      console.log('Sheet dimensions saved to localStorage');
+
     }
   }
 }
 
 /**
  * Save sheets to localStorage as backup
+ * 
+ * Persists the current sheets array and currentSheetIndex to localStorage
+ * for offline backup. Includes a timestamp for version tracking.
+ * 
+ * @returns {void}
+ * 
+ * @throws {Error} If localStorage write fails
  */
 function saveSheetsToLocalStorage() {
   try {
@@ -4296,14 +5251,19 @@ function saveSheetsToLocalStorage() {
       timestamp: new Date().toISOString()
     };
     localStorage.setItem('gpt-cells-sheets', JSON.stringify(sheetsData));
-    console.log('Sheets saved to localStorage');
+
   } catch (error) {
     console.error('Error saving to localStorage:', error);
   }
 }
 
 /**
- * Load sheets from localStorage
+ * Load sheets from localStorage backup
+ * 
+ * Attempts to restore sheets data from localStorage. Returns true if
+ * data was successfully loaded, false otherwise.
+ * 
+ * @returns {boolean} True if sheets were loaded successfully, false otherwise
  */
 function loadSheetsFromLocalStorage() {
   try {
@@ -4318,8 +5278,7 @@ function loadSheetsFromLocalStorage() {
         numRows = currentSheet.numRows || 10;
         numCols = currentSheet.numCols || 10;
         cells = currentSheet.cells || {};
-        
-        console.log('Loaded sheets from localStorage:', sheets.length);
+
         return true;
       }
     }
@@ -4333,13 +5292,20 @@ function loadSheetsFromLocalStorage() {
 
 /**
  * Populate all cell model selectors with available models
+ * 
+ * Updates both old-style select elements and new custom dropdown buttons
+ * with the available AI models. Sets appropriate default values based on
+ * cell settings or project defaults.
+ * 
+ * @param {Array<Object>} models - Array of model objects with id, name, description, etc.
+ * @returns {void}
  */
 function populateCellModelSelectors(models) {
   // Get the main model selector value
   const mainModelSelect = document.getElementById('model-select');
   const defaultModel = mainModelSelect ? mainModelSelect.value : (models[0]?.id || '');
   
-  // Find all cell model selectors
+  // Find all cell model selectors (old select elements)
   const cellModelSelectors = document.querySelectorAll('.cell-model-select');
   
   cellModelSelectors.forEach(selector => {
@@ -4368,13 +5334,56 @@ function populateCellModelSelectors(models) {
       let defaultModelToUse;
       if (projectDefaultModel && models.find(m => m.id === projectDefaultModel)) {
         defaultModelToUse = projectDefaultModel;
-        console.log(`📝 Cell ${cellId} using project default model:`, defaultModelToUse);
       } else {
         defaultModelToUse = textModels.length > 0 ? textModels[0].id : defaultModel;
-        console.log(`📝 Cell ${cellId} defaulting to text model:`, defaultModelToUse);
       }
       
       selector.value = defaultModelToUse;
+    }
+  });
+  
+  // Populate custom dropdown buttons for cards
+  const cellModelButtons = document.querySelectorAll('.cell-model-button');
+  cellModelButtons.forEach(button => {
+    const cellId = button.id.replace('model-btn-', '');
+    const cell = currentSheet.cells[cellId];
+    // Always use the main selector's value as the default for new cards
+    // If cell has no model or has the old default, use the main selector value
+    let cellModel = cell && cell.model ? cell.model : defaultModel;
+    // If cell model is the old hardcoded default, update it to use main selector
+    if (cellModel === 'gpt-3.5-turbo' && defaultModel && defaultModel !== 'gpt-3.5-turbo') {
+      cellModel = defaultModel;
+      // Update the cell object
+      if (cell) {
+        cell.model = defaultModel;
+      }
+    }
+    
+    // Find model name
+    const model = models.find(m => m.id === cellModel);
+    const modelName = model ? model.name : 'Loading...';
+    
+    // Update button text
+    const textSpan = button.querySelector('.model-button-text');
+    if (textSpan) {
+      textSpan.textContent = modelName;
+    }
+    
+    // Populate dropdown menu
+    const dropdown = document.getElementById(`model-dropdown-${cellId}`);
+    if (dropdown) {
+      dropdown.innerHTML = '';
+      models.forEach(model => {
+        const option = document.createElement('div');
+        option.className = 'cell-model-option';
+        if (model.id === cellModel) {
+          option.classList.add('selected');
+        }
+        option.textContent = model.name;
+        option.title = model.description || '';
+        option.onclick = () => selectCellModel(cellId, model.id);
+        dropdown.appendChild(option);
+      });
     }
   });
 }
@@ -4386,39 +5395,42 @@ function populateCellModelSelectors(models) {
 async function saveProjectDefaultModel(modelId) {
   try {
     if (!currentProjectId) {
-      console.log('⚠️ No current project ID, cannot save default model');
+
       return;
     }
     
     const userId = currentUser ? currentUser.uid : 'demo-user-123';
-    
-    console.log(`💾 Saving default model "${modelId}" to project ${currentProjectId}`);
-    console.log(`💾 User ID: ${userId}`);
-    console.log(`💾 Project ID: ${currentProjectId}`);
-    
+
+
+
     const updateData = {
       defaultModel: modelId,
       updatedAt: new Date()
     };
-    console.log(`💾 Update data:`, updateData);
-    
+
     const result = await firestoreService.updateProject(userId, currentProjectId, updateData);
-    console.log(`💾 Firestore update result:`, result);
-    
+
     // Update the current project object with the new default model
     if (currentProject) {
       currentProject.defaultModel = modelId;
-      console.log(`💾 Updated currentProject.defaultModel to:`, currentProject.defaultModel);
+
     }
-    
-    console.log('✅ Default model saved to project');
+
   } catch (error) {
     console.error('❌ Error saving default model to project:', error);
   }
 }
 
 /**
- * Update the model selector with available models
+ * Update the main model selector with available models
+ * 
+ * Populates the main model selector dropdown with models grouped by type
+ * (text, image, audio). Also updates the modal model selector and all cell
+ * model selectors. Sets the default model based on project settings or
+ * selects the first available OpenAI text model.
+ * 
+ * @param {Array<Object>} models - Array of model objects with id, name, type, provider, etc.
+ * @returns {void}
  */
 function updateModelSelector(models) {
   const modelSelect = document.getElementById('model-select');
@@ -4428,9 +5440,7 @@ function updateModelSelector(models) {
     console.error('Model selector element not found!');
     return;
   }
-  
-  console.log('Updating model selector with', models.length, 'models');
-  
+
   // Clear existing options
   modelSelect.innerHTML = '';
   if (modalModelSelect) {
@@ -4446,9 +5456,7 @@ function updateModelSelector(models) {
     }
     groupedModels[type].push(model);
   });
-  
-  console.log('Grouped models:', groupedModels);
-  
+
   // Add models to both selectors with type grouping
   Object.keys(groupedModels).forEach(type => {
     const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
@@ -4467,7 +5475,7 @@ function updateModelSelector(models) {
       option.value = model.id;
       option.textContent = `  ${model.name}`;
       option.title = model.description || '';
-      console.log('Adding model option:', model.id, model.name);
+
       modelSelect.appendChild(option);
     });
     
@@ -4493,14 +5501,13 @@ function updateModelSelector(models) {
   if (projectDefaultModel && models.find(m => m.id === projectDefaultModel)) {
     // Use the project's saved default model
     modelToSet = projectDefaultModel;
-    console.log('✅ Using project default model:', modelToSet);
+
   } else {
     // Set default selection (first OpenAI TEXT model, not image/audio)
     const openaiTextModels = models.filter(m => m.provider === 'openai' && m.type === 'text');
     if (openaiTextModels.length > 0) {
       modelToSet = openaiTextModels[0].id;
-      console.log('✅ Set default model to:', modelToSet);
-      
+
       // Save the default model to the project
       saveProjectDefaultModel(modelToSet);
     } else if (models.length > 0) {
@@ -4508,15 +5515,13 @@ function updateModelSelector(models) {
       const textModels = models.filter(m => m.type === 'text');
       if (textModels.length > 0) {
         modelToSet = textModels[0].id;
-        console.log('✅ Set fallback text model to:', modelToSet);
-        
+
         // Save the default model to the project
         saveProjectDefaultModel(modelToSet);
       } else {
         // Last resort - first model
         modelToSet = models[0].id;
-        console.log('⚠️ Set last resort model to:', modelToSet);
-        
+
         // Save the default model to the project
         saveProjectDefaultModel(modelToSet);
       }
@@ -4530,10 +5535,9 @@ function updateModelSelector(models) {
       modalModelSelect.value = modelToSet;
     }
   }
-  
-  console.log('Model selector updated. Total options:', modelSelect.options.length);
+
   if (modalModelSelect) {
-    console.log('Modal model selector updated. Total options:', modalModelSelect.options.length);
+
   }
   
   // Add event listener to save default model when user changes selection
@@ -4549,8 +5553,7 @@ function updateModelSelector(models) {
  * @param {string} newDefaultModel The new default model to apply
  */
 function updateAllEmptyCellsToDefaultModel(newDefaultModel) {
-  console.log(`🔄 Updating all empty cells to use model: ${newDefaultModel}`);
-  
+
   // Find all cell model selectors
   const cellModelSelectors = document.querySelectorAll('.cell-model-select');
   let updatedCount = 0;
@@ -4590,7 +5593,7 @@ function updateAllEmptyCellsToDefaultModel(newDefaultModel) {
       }
       
       updatedCount++;
-      console.log(`📝 Updated empty cell ${cellId} to model: ${newDefaultModel}`);
+
     }
   });
   
@@ -4598,8 +5601,7 @@ function updateAllEmptyCellsToDefaultModel(newDefaultModel) {
   if (updatedCount > 0) {
     showSuccess(`Updated ${updatedCount} empty cells to use ${newDefaultModel}`);
   }
-  
-  console.log(`✅ Updated ${updatedCount} empty cells to use model: ${newDefaultModel}`);
+
 }
 
 /**
@@ -4607,7 +5609,7 @@ function updateAllEmptyCellsToDefaultModel(newDefaultModel) {
  */
 function handleModelSelectorChange() {
   const selectedModel = this.value;
-  console.log('🔄 User changed main model selector to:', selectedModel);
+
   saveProjectDefaultModel(selectedModel);
   
   // Update all empty cells to use the new default model
@@ -4639,6 +5641,11 @@ const KeyboardShortcuts = {
 
 // Enhanced keyboard navigation
 function handleEnhancedKeyNavigation(event) {
+  // Don't handle navigation for card textareas - cards don't need cell navigation
+  if (event.target && event.target.closest('.card')) {
+    return;
+  }
+  
   // Handle keyboard shortcuts
   const key = event.ctrlKey ? 'Ctrl+' : '';
   const keyWithShift = event.ctrlKey && event.shiftKey ? 'Ctrl+Shift+' : '';
@@ -4659,6 +5666,29 @@ document.addEventListener('keydown', handleEnhancedKeyNavigation);
 
 // Add click handlers for cell selection
 document.addEventListener('click', (event) => {
+  // Handle card selection
+  const card = event.target.closest('.card');
+  if (card) {
+    // Don't select if clicking on header actions, ports, or controls
+    if (event.target.closest('.card-header-actions') || 
+        event.target.classList.contains('card-port') ||
+        event.target.closest('.card-controls')) {
+      // Ensure ports exist on all cards after any click
+      ensureAllCardPorts();
+      return;
+    }
+    
+    // Select the card (show ports)
+    const cellId = card.getAttribute('data-cell-id');
+    if (cellId) {
+      showCardControls(cellId);
+    }
+    
+    // Ensure ports exist on all cards after any click
+    ensureAllCardPorts();
+    return;
+  }
+  
   const textarea = event.target.closest('textarea[id^="prompt-"]');
   if (textarea) {
     const cellId = textarea.id.replace('prompt-', '');
@@ -4666,7 +5696,15 @@ document.addEventListener('click', (event) => {
   } else {
     // Hide all outputs when clicking elsewhere
     hideAllOutputs();
+    
+    // Remove focused class from all cards when clicking outside
+    document.querySelectorAll('.card').forEach(card => {
+      card.classList.remove('focused');
+    });
   }
+  
+  // Ensure ports exist on all cards after any click
+  ensureAllCardPorts();
 });
 
 /**
@@ -4719,9 +5757,7 @@ async function addSheet() {
   try {
     const userId = currentUser ? currentUser.uid : 'demo-user-123';
     const sheetNumber = sheets.length + 1;
-    
-    console.log('Creating sheet for user:', userId);
-    
+
     // Create sheet in Firestore
     const projectId = currentProjectId || 'default-project';
     const result = await firestoreService.createSheet(userId, projectId, {
@@ -4748,8 +5784,7 @@ async function addSheet() {
       
       // Fallback: create sheet locally if Firestore fails
       if (result.error.includes('permissions') || result.error.includes('Missing')) {
-        console.log('Firestore permission denied, creating local sheet...');
-        
+
         const localSheet = {
           id: 'local-' + Date.now(),
           name: `Sheet${sheetNumber}`,
@@ -4773,7 +5808,7 @@ async function addSheet() {
     console.error('Error creating sheet:', error);
     
     // Fallback: create sheet locally
-    console.log('Creating local sheet as fallback...');
+
     const sheetNumber = sheets.length + 1;
     const localSheet = {
       id: 'local-' + Date.now(),
@@ -4852,8 +5887,7 @@ async function updateSheetName(sheetIndex, newName) {
             name: trimmedName,
             updatedAt: new Date()
           });
-          
-          console.log('✅ Sheet name updated in database');
+
         } catch (error) {
           console.error('❌ Error updating sheet name:', error);
           showError('Failed to save sheet name');
@@ -4973,10 +6007,20 @@ function parseFormula(formula) {
 }
 
 /**
- * Copy/paste functionality
+ * Clipboard for copy/paste operations
+ * @type {Object|null} clipboard - Stores copied cell data {prompt, output, type}
  */
 let clipboard = null;
 
+/**
+ * Copy a cell's data to the clipboard
+ * 
+ * Stores the cell's prompt and output in the clipboard for pasting
+ * into another cell.
+ * 
+ * @param {string} cellId - Cell identifier to copy
+ * @returns {void}
+ */
 function copyCell(cellId) {
   const cell = cells[cellId];
   if (cell) {
@@ -4988,6 +6032,15 @@ function copyCell(cellId) {
   }
 }
 
+/**
+ * Paste clipboard data into a cell
+ * 
+ * Copies the clipboard's prompt and output into the specified cell
+ * and updates the UI textarea and output display.
+ * 
+ * @param {string} cellId - Cell identifier to paste into
+ * @returns {void}
+ */
 function pasteCell(cellId) {
   if (clipboard && clipboard.type === 'cell') {
     const cell = cells[cellId];
@@ -5010,7 +6063,20 @@ function pasteCell(cellId) {
 }
 
 /**
- * Find and replace functionality
+ * Find and replace text across all cells
+ * 
+ * Searches through all cell prompts and replaces matching text. Supports
+ * case-sensitive and case-insensitive matching. Updates both the cell data
+ * and the UI textareas.
+ * 
+ * @param {string} findText - Text to find
+ * @param {string} replaceText - Text to replace with
+ * @param {boolean} [matchCase=false] - Whether to match case (default: false)
+ * @returns {number} Number of cells where replacements were made
+ * 
+ * @example
+ * // Replace "hello" with "hi" in all cells (case-insensitive)
+ * const count = findAndReplace('hello', 'hi', false) // Returns number of replacements
  */
 function findAndReplace(findText, replaceText, matchCase = false) {
   let foundCount = 0;
@@ -5044,11 +6110,22 @@ function findAndReplace(findText, replaceText, matchCase = false) {
 
 /**
  * Undo/Redo functionality
+ * 
+ * Maintains history of cell states for undo/redo operations.
+ * Maximum of 50 undo steps are stored.
  */
 let undoStack = [];
 let redoStack = [];
 const MAX_UNDO_STEPS = 50;
 
+/**
+ * Save current state to undo stack
+ * 
+ * Creates a deep copy of the current cells and sheet index and pushes
+ * it to the undo stack. Clears the redo stack when a new action is performed.
+ * 
+ * @returns {void}
+ */
 function saveState() {
   const state = {
     cells: JSON.parse(JSON.stringify(cells)),
@@ -5064,6 +6141,14 @@ function saveState() {
   redoStack = [];
 }
 
+/**
+ * Undo the last action
+ * 
+ * Restores the previous state from the undo stack and pushes the current
+ * state to the redo stack. Re-renders the grid after restoration.
+ * 
+ * @returns {void}
+ */
 function undo() {
   if (undoStack.length > 0) {
     const currentState = {
@@ -5082,6 +6167,14 @@ function undo() {
   }
 }
 
+/**
+ * Redo the last undone action
+ * 
+ * Restores the next state from the redo stack and pushes the current
+ * state to the undo stack. Re-renders the grid after restoration.
+ * 
+ * @returns {void}
+ */
 function redo() {
   if (redoStack.length > 0) {
     const currentState = {
@@ -5100,28 +6193,41 @@ function redo() {
   }
 }
 
-// Modal functionality
+// ============================================================================
+// SECTION 12: MODAL FUNCTIONALITY
+// ============================================================================
+
+/**
+ * Modal state variables
+ * @type {string|null} currentModalCellId - Currently open modal's cell ID
+ * @type {string|null} currentEditingCell - Currently editing cell ID for formatting
+ */
 let currentModalCellId = null;
 let currentEditingCell = null;
 
+/**
+ * Open the cell editor modal
+ * 
+ * Displays the modal editor for the specified cell, populating it with
+ * the cell's current data including prompt, output, model settings, and
+ * generation history. Initializes formatting controls.
+ * 
+ * @param {string} cellId - Cell identifier to open in modal
+ * @returns {void}
+ */
 function openModal(cellId) {
   currentModalCellId = cellId;
-  console.log(`🔍 Opening modal for cell ${cellId}`);
-  console.log(`🔍 Current sheet:`, currentSheet);
-  console.log(`🔍 Current sheet cells:`, currentSheet.cells);
-  console.log(`🔍 Cell ${cellId} in currentSheet.cells:`, currentSheet.cells[cellId]);
+  // Opening modal for cell
+  // Opening modal for cell
   
   // Get the default model from the main selector
   const mainModelSelect = document.getElementById('model-select');
   const defaultModel = mainModelSelect ? mainModelSelect.value : 'gpt-3.5-turbo';
   const cell = currentSheet.cells[cellId] || { prompt: '', output: '', model: defaultModel, temperature: 0.7, cellPrompt: '' };
-  
-  console.log(`🔍 Modal opening for cell ${cellId}, cell data:`, cell);
-  
+
   // Show the modal
   document.getElementById('cellModal').style.display = 'block';
-  console.log(`🔍 Modal display set to block`);
-  
+
   // Update modal title
   document.getElementById('modalTitle').textContent = `Cell ${cellId} Editor`;
   
@@ -5157,19 +6263,11 @@ function openModal(cellId) {
   
   // Handle generation logs in modal
   const modalOutput = document.getElementById('modalOutput');
-  console.log(`🔍 Modal output element:`, modalOutput);
-  console.log(`🔍 Modal output element found:`, !!modalOutput);
-  console.log(`🔍 Opening modal for cell ${cellId}:`, {
-    hasGenerations: !!cell.generations,
-    generationsLength: cell.generations ? cell.generations.length : 0,
-    generations: cell.generations,
-    cellData: cell,
-    currentSheetCells: currentSheet.cells,
-    currentSheetId: currentSheet.id
-  });
+
+  // Opening modal for cell
   
   if (cell.generations && cell.generations.length > 0) {
-    console.log(`✅ Cell ${cellId} has ${cell.generations.length} generations, displaying them`);
+
     let logsHTML = '<div class="generation-logs">';
     logsHTML += '<h4 style="margin: 0 0 10px 0; color: #495057; font-size: 14px;">Generation History:</h4>';
     logsHTML += '<div style="margin-bottom: 10px; font-size: 12px; color: #6c757d; background: #e3f2fd; padding: 8px; border-radius: 4px;">';
@@ -5199,7 +6297,7 @@ function openModal(cellId) {
       logsHTML += '</div>';
       
       if (gen.type === 'image') {
-        console.log(`🖼️ Displaying image in modal:`, gen.output);
+
         logsHTML += `
           <div class="generation-content" style="position: relative;">
             <img src="${gen.output}" alt="Generated image" style="width: 100%; height: 100%; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -5209,7 +6307,7 @@ function openModal(cellId) {
           </div>
         `;
       } else if (gen.type === 'video') {
-        console.log(`🎥 Displaying video in modal:`, gen.output);
+
         logsHTML += `
           <div class="generation-content" style="position: relative;">
             <div class="video-container">
@@ -5258,10 +6356,9 @@ function openModal(cellId) {
     logsHTML += '</div>';
     
     logsHTML += '</div>';
-    console.log(`🔍 Setting modalOutput.innerHTML with logsHTML length:`, logsHTML.length);
+
     modalOutput.innerHTML = logsHTML;
-    console.log(`🔍 Modal output innerHTML set successfully`);
-    
+
     // Highlight selected generations if they exist
     if (cell.selectedGenerations && cell.selectedGenerations.length > 0) {
       setTimeout(() => {
@@ -5269,7 +6366,7 @@ function openModal(cellId) {
       }, 100); // Small delay to ensure DOM is updated
     }
   } else {
-    console.log(`⚠️ Cell ${cellId} has no generations yet`);
+
     const noGenerationsHTML = `
       <div style="text-align: center; padding: 20px; color: #6c757d;">
         <div style="font-size: 16px; margin-bottom: 10px;">📝 No generations yet</div>
@@ -5279,47 +6376,78 @@ function openModal(cellId) {
         </div>
       </div>
     `;
-    console.log(`🔍 Setting modalOutput.innerHTML with no generations message`);
+
     modalOutput.innerHTML = noGenerationsHTML;
-    console.log(`🔍 Modal output innerHTML set with no generations message`);
+
   }
   
   // Set modal model to cell's model, or default to the main model selector's value
   const modalDefaultModel = mainModelSelect ? mainModelSelect.value : 'gpt-3.5-turbo';
-  document.getElementById('modalModel').value = cell.model || modalDefaultModel;
-  document.getElementById('modalTemperature').value = cell.temperature || 0.7;
-  document.getElementById('modalTempValue').textContent = cell.temperature || 0.7;
-  document.getElementById('modalCellPrompt').value = cell.cellPrompt || '';
-  document.getElementById('modalAutoRun').checked = cell.autoRun || false;
+  const modalModelEl = document.getElementById('modalModel');
+  if (modalModelEl) {
+    modalModelEl.value = cell.model || modalDefaultModel;
+  }
   
-  console.log(`Opening modal for cell ${cellId}:`, { 
-    prompt: cell.prompt, 
-    output: cell.output, 
-    model: cell.model, 
-    temperature: cell.temperature, 
-    cellPrompt: cell.cellPrompt,
-    autoRun: cell.autoRun 
-  });
+  const modalTemperatureEl = document.getElementById('modalTemperature');
+  if (modalTemperatureEl) {
+    modalTemperatureEl.value = cell.temperature || 0.7;
+  }
+  
+  const modalTempValueEl = document.getElementById('modalTempValue');
+  if (modalTempValueEl) {
+    modalTempValueEl.textContent = cell.temperature || 0.7;
+  }
+  
+  const modalCellPromptEl = document.getElementById('modalCellPrompt');
+  if (modalCellPromptEl) {
+    modalCellPromptEl.value = cell.cellPrompt || '';
+  }
+  
+  const modalAutoRunEl = document.getElementById('modalAutoRun');
+  if (modalAutoRunEl) {
+    modalAutoRunEl.checked = cell.autoRun || false;
+  }
+  
+  // Opening modal for cell
   
   // Show modal
   document.getElementById('cellModal').style.display = 'block';
   
   // Update temperature display when slider changes
-  document.getElementById('modalTemperature').addEventListener('input', function() {
-    document.getElementById('modalTempValue').textContent = this.value;
-  });
+  const modalTempSliderEl = document.getElementById('modalTemperature');
+  const modalTempValueDisplayEl = document.getElementById('modalTempValue');
+  if (modalTempSliderEl && modalTempValueDisplayEl) {
+    modalTempSliderEl.addEventListener('input', function() {
+      modalTempValueDisplayEl.textContent = this.value;
+    });
+  }
   
   // Initialize formatting controls and load existing formatting
   initializeFormattingControls();
   loadCellFormatting(cellId);
 }
 
+/**
+ * Close the cell editor modal
+ * 
+ * Hides the modal and clears the current modal cell ID and editing cell.
+ * 
+ * @returns {void}
+ */
 function closeModal() {
   document.getElementById('cellModal').style.display = 'none';
   currentModalCellId = null;
   currentEditingCell = null;
 }
 
+/**
+ * Run the cell from the modal editor
+ * 
+ * Executes the cell with the current modal values (prompt, model, temperature)
+ * and updates the modal output display with generation history after completion.
+ * 
+ * @returns {Promise<void>}
+ */
 function runModalCell() {
   if (!currentModalCellId) return;
   
@@ -5349,13 +6477,7 @@ function runModalCell() {
     // Update the modal output with all generation logs
     const cell = currentSheet.cells[currentModalCellId];
     const modalOutput = document.getElementById('modalOutput');
-    
-    console.log(`🔍 Updating modal after run for cell ${currentModalCellId}:`, {
-      hasGenerations: !!cell.generations,
-      generationsLength: cell.generations ? cell.generations.length : 0,
-      generations: cell.generations
-    });
-    
+
     if (cell.generations && cell.generations.length > 0) {
       let logsHTML = '<div class="generation-logs">';
       logsHTML += '<h4 style="margin: 0 0 10px 0; color: #495057; font-size: 14px;">Generation History:</h4>';
@@ -5386,7 +6508,7 @@ function runModalCell() {
         logsHTML += '</div>';
         
         if (gen.type === 'image') {
-          console.log(`🖼️ Displaying image in modal:`, gen.output);
+
           logsHTML += `
             <div class="generation-content" style="position: relative;">
               <img src="${gen.output}" alt="Generated image" style="width: 100%; height: 100%; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -5396,7 +6518,7 @@ function runModalCell() {
             </div>
           `;
         } else if (gen.type === 'video') {
-          console.log(`🎥 Displaying video in modal:`, gen.output);
+
           logsHTML += `
             <div class="generation-content" style="position: relative;">
               <div class="video-container">
@@ -5459,16 +6581,33 @@ function runModalCell() {
   });
 }
 
+/**
+ * Save the cell from the modal editor
+ * 
+ * Persists all cell data from the modal inputs (prompt, model, temperature,
+ * cellPrompt, autoRun) to both memory and Firestore. Handles both text and
+ * image outputs.
+ * 
+ * @returns {Promise<void>}
+ */
 function saveModalCell() {
   if (!currentModalCellId) return;
   
-  const prompt = document.getElementById('modalPrompt').value;
-  const model = document.getElementById('modalModel').value;
-  const temperature = parseFloat(document.getElementById('modalTemperature').value);
-  const cellPrompt = document.getElementById('modalCellPrompt').value;
-  const autoRun = document.getElementById('modalAutoRun').checked;
+  const modalPromptEl = document.getElementById('modalPrompt');
+  const modalModelEl = document.getElementById('modalModel');
+  const modalTemperatureEl = document.getElementById('modalTemperature');
+  const modalCellPromptEl = document.getElementById('modalCellPrompt');
+  const modalAutoRunEl = document.getElementById('modalAutoRun');
   
-  console.log(`Saving modal cell ${currentModalCellId}:`, { prompt, model, temperature, cellPrompt, autoRun });
+  if (!modalPromptEl || !modalModelEl) return;
+  
+  const prompt = modalPromptEl.value;
+  const model = modalModelEl.value;
+  const temperature = modalTemperatureEl ? parseFloat(modalTemperatureEl.value) : 0.7;
+  const cellPrompt = modalCellPromptEl ? modalCellPromptEl.value : '';
+  const autoRun = modalAutoRunEl ? modalAutoRunEl.checked : false;
+  
+  // Saving modal cell
   
   // Get output - handle both text and images
   const modalOutput = document.getElementById('modalOutput');
@@ -5495,7 +6634,8 @@ function saveModalCell() {
   
   // Save to database
   if (currentSheet.id) {
-    saveCellToDatabase(currentModalCellId, prompt, output, model, temperature, cellPrompt, autoRun);
+    const cellInterval = currentSheet.cells[currentModalCellId]?.interval || 0;
+    saveCellToDatabase(currentModalCellId, prompt, output, model, temperature, cellPrompt, autoRun, cellInterval);
   }
   
   // Update the grid display
@@ -5596,8 +6736,20 @@ document.addEventListener('click', function(event) {
   }
 });
 
-// Image handling functions
-// Media type detection functions
+// ============================================================================
+// SECTION 13: MEDIA TYPE DETECTION AND RENDERING
+// ============================================================================
+
+/**
+ * Check if a text string is an image URL
+ * 
+ * Detects various image URL formats including data URLs, HTTP/HTTPS URLs
+ * with image extensions, and provider-specific patterns (OpenAI DALL-E,
+ * Firebase Storage, Replicate, Stability AI, Midjourney, Leonardo AI).
+ * 
+ * @param {string} text - Text to check
+ * @returns {boolean} True if text appears to be an image URL
+ */
 function isImageUrl(text) {
   if (!text) return false;
   
@@ -5624,6 +6776,16 @@ function isImageUrl(text) {
   return false;
 }
 
+/**
+ * Check if a text string is a video URL
+ * 
+ * Detects various video URL formats including data URLs, HTTP/HTTPS URLs
+ * with video extensions, and provider-specific patterns (Runway ML,
+ * Pika Labs, Stability AI Video, Replicate, Firebase Storage).
+ * 
+ * @param {string} text - Text to check
+ * @returns {boolean} True if text appears to be a video URL
+ */
 function isVideoUrl(text) {
   if (!text) return false;
   
@@ -5647,6 +6809,14 @@ function isVideoUrl(text) {
   return false;
 }
 
+/**
+ * Check if a text string is an audio URL
+ * 
+ * Detects base64-encoded audio data URLs in various formats (MP3, WAV, OGG).
+ * 
+ * @param {string} text - Text to check
+ * @returns {boolean} True if text appears to be an audio data URL
+ */
 function isAudioUrl(text) {
   if (!text) return false;
   // Check if it's a base64 audio data URL
@@ -5655,7 +6825,15 @@ function isAudioUrl(text) {
          text.startsWith('data:audio/ogg;base64,');
 }
 
-// Unified media type detection
+/**
+ * Determine the media type of output content
+ * 
+ * Checks the output string against image, video, and audio detection functions
+ * to determine the content type. Returns 'text' as default.
+ * 
+ * @param {string} output - Output content to analyze
+ * @returns {string} Media type: 'image', 'video', 'audio', or 'text'
+ */
 function getMediaType(output) {
   if (!output) return 'text';
   
@@ -5666,6 +6844,16 @@ function getMediaType(output) {
   return 'text';
 }
 
+/**
+ * Render image output in a cell
+ * 
+ * Displays an image thumbnail in the cell's output area with click-to-view
+ * functionality. The thumbnail opens a modal for full-size viewing.
+ * 
+ * @param {string} cellId - Cell identifier
+ * @param {string} imageUrl - URL of the image to display
+ * @returns {void}
+ */
 function renderImageOutput(cellId, imageUrl) {
   const outDiv = document.getElementById('output-' + cellId);
   if (outDiv) {
@@ -5683,6 +6871,16 @@ function renderImageOutput(cellId, imageUrl) {
   }
 }
 
+/**
+ * Render text output in a cell
+ * 
+ * Displays plain text content in the cell's output area. Shows the output
+ * div if text is present, hides it if empty.
+ * 
+ * @param {string} cellId - Cell identifier
+ * @param {string} text - Text content to display
+ * @returns {void}
+ */
 function renderTextOutput(cellId, text) {
   const outDiv = document.getElementById('output-' + cellId);
   if (outDiv) {
@@ -5694,6 +6892,16 @@ function renderTextOutput(cellId, text) {
   }
 }
 
+/**
+ * Render audio output in a cell
+ * 
+ * Displays an HTML5 audio player with controls in the cell's output area.
+ * Supports MP3 format with fallback message for unsupported browsers.
+ * 
+ * @param {string} cellId - Cell identifier
+ * @param {string} audioData - Audio data URL (base64-encoded)
+ * @returns {void}
+ */
 function renderAudioOutput(cellId, audioData) {
   const outDiv = document.getElementById('output-' + cellId);
   if (outDiv) {
@@ -5714,9 +6922,17 @@ function renderAudioOutput(cellId, audioData) {
   }
 }
 
+/**
+ * Close the output display for a cell
+ * 
+ * Hides the output div for the specified cell. Prevents event bubbling
+ * to avoid interfering with other click handlers.
+ * 
+ * @param {string} cellId - Cell identifier
+ * @returns {boolean} Always returns false to prevent further event handling
+ */
 function closeOutput(cellId) {
-  console.log('Closing output for cell:', cellId);
-  
+
   // Prevent event bubbling
   if (event) {
     event.stopPropagation();
@@ -5726,9 +6942,9 @@ function closeOutput(cellId) {
   const outDiv = document.getElementById('output-' + cellId);
   if (outDiv) {
     outDiv.style.display = 'none';
-    console.log('Output closed for cell:', cellId);
+
   } else {
-    console.log('Output div not found for cell:', cellId);
+
   }
   
   return false; // Prevent any further event handling
@@ -5793,8 +7009,7 @@ function downloadImage(imageUrl) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    console.log(`📥 Downloaded image: ${filename}`);
+
   } catch (error) {
     console.error('❌ Error downloading image:', error);
     showError('Failed to download image. Please try right-clicking and "Save image as..."');
@@ -5822,8 +7037,7 @@ function downloadVideo(videoUrl) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    console.log(`📥 Downloaded video: ${filename}`);
+
   } catch (error) {
     console.error('❌ Error downloading video:', error);
     showError('Failed to download video. Please try right-clicking and "Save video as..."');
@@ -5851,8 +7065,7 @@ function downloadAudio(audioUrl) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    console.log(`📥 Downloaded audio: ${filename}`);
+
   } catch (error) {
     console.error('❌ Error downloading audio:', error);
     showError('Failed to download audio. Please try right-clicking and "Save audio as..."');
@@ -5866,8 +7079,7 @@ function downloadAudio(audioUrl) {
  */
 function sortColumn(columnIndex, direction) {
   try {
-    console.log(`🔄 Sorting column ${columnIndex} in ${direction} order`);
-    
+
     // Collect all cells in the column with their row data
     const columnCells = [];
     for (let r = 0; r < numRows; r++) {
@@ -5926,8 +7138,7 @@ function sortColumn(columnIndex, direction) {
     
     // Update sort indicators
     updateSortIndicators(columnIndex, direction);
-    
-    console.log(`✅ Column ${columnIndex} sorted in ${direction} order`);
+
     showSuccess(`Column ${String.fromCharCode(65 + columnIndex)} sorted ${direction === 'asc' ? 'A-Z' : 'Z-A'}`);
     
   } catch (error) {
@@ -5998,7 +7209,7 @@ function startColumnResize(event, columnIndex) {
   document.addEventListener('mousemove', handleColumnResize);
   document.addEventListener('mouseup', stopResize);
   
-  console.log(`🔄 Started resizing column ${columnIndex}`);
+  // Started resizing column
 }
 
 /**
@@ -6050,7 +7261,7 @@ function startRowResize(event, rowIndex) {
   document.addEventListener('mousemove', handleRowResize);
   document.addEventListener('mouseup', stopResize);
   
-  console.log(`🔄 Started resizing row ${rowIndex}`);
+  // Started resizing row
 }
 
 /**
@@ -6102,8 +7313,7 @@ function stopResize() {
   isResizing = false;
   resizeType = null;
   resizeIndex = null;
-  
-  console.log(`✅ Finished resizing ${resizeType}`);
+
 }
 
 /**
@@ -6125,8 +7335,7 @@ function applyColumnResize() {
     
     columnHeader.style.width = newWidth + 'px';
     columnHeader.style.minWidth = newWidth + 'px';
-    
-    console.log(`✅ Column ${resizeIndex} resized to ${newWidth}px`);
+
   }
 }
 
@@ -6152,24 +7361,1081 @@ function applyRowResize() {
       row.style.height = newHeight + 'px';
       row.style.minHeight = newHeight + 'px';
     }
-    
-    console.log(`✅ Row ${resizeIndex} resized to ${newHeight}px`);
+
   }
 }
 
 // Make admin functions available globally for console access
 window.makeCurrentUserAdmin = makeCurrentUserAdmin;
 window.checkAdminStatus = checkAdminStatus;
-window.addAdminButton = addAdminButton;
-window.forceAddAdminButton = function() {
-  console.log('🔧 Force adding admin button...');
-  addAdminButton();
+window.addAdminLink = addAdminLink;
+window.forceAddAdminLink = function() {
+  addAdminLink();
 };
 
 window.forceAdminStatus = function() {
-  console.log('🔧 Force setting admin status...');
   isAdmin = true;
   checkAdminStatus();
 };
+
+// Card positions storage
+let cardPositions = {};
+
+/**
+ * Draw connection lines between cards based on dependencies
+ */
+// ============================================================================
+// SECTION 9: CONNECTION MANAGEMENT
+// ============================================================================
+
+/**
+ * Draw connection lines between cards based on dependencies
+ * 
+ * Parses dependencies from each card's prompt and draws SVG lines
+ * connecting source cards (output ports) to target cards (input ports).
+ * 
+ * @returns {void}
+ */
+function drawConnectionLines() {
+  // Ensure all cards have ports before drawing lines
+  ensureAllCardPorts();
+  const svg = document.getElementById('connection-lines');
+  if (!svg) return;
+  
+  // Clear existing lines
+  const existingLines = svg.querySelectorAll('line');
+  existingLines.forEach(line => line.remove());
+  
+  // Update SVG dimensions
+  const container = document.getElementById('cards-container');
+  if (container) {
+    const rect = container.getBoundingClientRect();
+    svg.setAttribute('width', rect.width);
+    svg.setAttribute('height', rect.height);
+  }
+  
+  // Get all cards
+  const cards = document.querySelectorAll('.card');
+  
+  cards.forEach(card => {
+    const targetCellId = card.getAttribute('data-cell-id');
+    const targetCell = currentSheet.cells[targetCellId];
+    if (!targetCell || !targetCell.prompt) return;
+    
+    // Parse dependencies from prompt
+    const deps = parseDependencies(targetCell.prompt);
+    
+    deps.forEach(depRef => {
+      // Extract cell ID from dependency reference
+      // Handle formats like: "A1", "prompt:A1", "output:A1", "A1-1", "A1:1-3", "A1:2"
+      let depId = depRef;
+      
+      // Skip cross-sheet references
+      if (depId.includes('!')) {
+        return;
+      }
+      
+      // Remove prefixes like "prompt:", "output:"
+      if (depRef.includes(':')) {
+        const parts = depRef.split(':');
+        depId = parts[parts.length - 1];
+      }
+      
+      // Remove generation suffixes like "-1", ":1-3", ":2"
+      if (depId.includes('-')) {
+        depId = depId.split('-')[0];
+      }
+      
+      // Remove any remaining colons (for generation ranges)
+      depId = depId.split(':')[0];
+      
+      const sourceCard = document.getElementById(`card-${depId}`);
+      if (!sourceCard) {
+        // Card doesn't exist yet, skip drawing this connection
+        return;
+      }
+      
+      // Get card positions
+      const sourceRect = sourceCard.getBoundingClientRect();
+      const targetRect = card.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      
+      // Calculate port positions (output port on source, input port on target)
+      const sourceX = sourceRect.right - containerRect.left;
+      const sourceY = sourceRect.top + sourceRect.height / 2 - containerRect.top;
+      const targetX = targetRect.left - containerRect.left;
+      const targetY = targetRect.top + targetRect.height / 2 - containerRect.top;
+      
+      // Create line
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', sourceX);
+      line.setAttribute('y1', sourceY);
+      line.setAttribute('x2', targetX);
+      line.setAttribute('y2', targetY);
+      line.setAttribute('stroke', '#1967d2');
+      line.setAttribute('stroke-width', '2');
+      line.setAttribute('marker-end', 'url(#arrowhead)');
+      svg.appendChild(line);
+    });
+  });
+}
+
+/**
+ * Set up card dragging functionality
+ */
+function setupCardDragging() {
+  let draggedCard = null;
+  let offsetX = 0;
+  let offsetY = 0;
+  
+  document.addEventListener('mousedown', (e) => {
+    // Don't drag if clicking on ports, header actions, textarea, or controls
+    if (e.target.classList.contains('card-port') || 
+        e.target.closest('.card-header-actions') || 
+        e.target.closest('textarea') || 
+        e.target.closest('.card-controls')) return;
+    
+    const card = e.target.closest('.card');
+    if (!card) return;
+    
+    draggedCard = card;
+    const rect = card.getBoundingClientRect();
+    const containerRect = document.getElementById('cards-container').getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    card.style.cursor = 'grabbing';
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (!draggedCard) return;
+    
+    const container = document.getElementById('cards-container');
+    const containerRect = container.getBoundingClientRect();
+    const x = e.clientX - containerRect.left - offsetX;
+    const y = e.clientY - containerRect.top - offsetY;
+    
+    const cellId = draggedCard.getAttribute('data-cell-id');
+    if (typeof window.cardPositions === 'undefined') {
+      if (currentSheet && currentSheet.cardPositions) {
+        window.cardPositions = { ...currentSheet.cardPositions };
+      } else {
+        window.cardPositions = {};
+      }
+    }
+    window.cardPositions[cellId] = { x, y };
+    draggedCard.style.left = x + 'px';
+    draggedCard.style.top = y + 'px';
+    
+    drawConnectionLines();
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (draggedCard) {
+      draggedCard.style.cursor = 'move';
+      const cellId = draggedCard.getAttribute('data-cell-id');
+      
+      // Save card positions to database after dragging ends
+      if (cellId && window.cardPositions && window.cardPositions[cellId]) {
+        saveCardPositions();
+      }
+      
+      draggedCard = null;
+    }
+  });
+}
+
+/**
+ * Set up event delegation for card interactions
+ */
+function setupCardEventDelegation() {
+  // Handle focus events on card textareas
+  document.addEventListener('focusin', (e) => {
+    if (e.target.matches('.card textarea')) {
+      const card = e.target.closest('.card');
+      if (card) {
+        showCardControls(card.getAttribute('data-cell-id'));
+      }
+    }
+  });
+  
+  document.addEventListener('focusout', (e) => {
+    if (e.target.matches('.card textarea')) {
+      setTimeout(() => {
+        const card = e.target.closest('.card');
+        if (card && !card.contains(document.activeElement)) {
+          card.classList.remove('focused');
+        }
+      }, 200);
+    }
+  });
+}
+
+/**
+ * Set up card connection functionality (drag from output port to input port)
+ */
+// Connection state (shared across all calls)
+let connectionState = {
+  draggingFromPort: null,
+  previewLine: null,
+  sourceCardId: null,
+  isDragging: false
+};
+
+function setupCardConnections() {
+  // Remove existing listeners by using a flag
+  if (window.cardConnectionsSetup) return;
+  window.cardConnectionsSetup = true;
+  
+  // Handle mousedown on output ports
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('card-port') && e.target.classList.contains('output')) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const card = e.target.closest('.card');
+      if (!card) return;
+      
+      connectionState.sourceCardId = card.getAttribute('data-cell-id');
+      connectionState.draggingFromPort = e.target;
+      connectionState.isDragging = true;
+      
+      // Create preview line
+      const container = document.getElementById('cards-container');
+      if (!container) return;
+      
+      const svg = document.getElementById('connection-lines');
+      if (!svg) return;
+      
+      connectionState.previewLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      connectionState.previewLine.setAttribute('stroke', '#1967d2');
+      connectionState.previewLine.setAttribute('stroke-width', '2');
+      connectionState.previewLine.setAttribute('stroke-dasharray', '5,5');
+      connectionState.previewLine.setAttribute('opacity', '0.5');
+      svg.appendChild(connectionState.previewLine);
+      
+      // Update cursor
+      document.body.style.cursor = 'crosshair';
+    }
+  });
+  
+  // Handle mousemove to update preview line
+  document.addEventListener('mousemove', (e) => {
+    if (!connectionState.draggingFromPort || !connectionState.previewLine || !connectionState.isDragging) return;
+    
+    const container = document.getElementById('cards-container');
+    if (!container) return;
+    
+    const containerRect = container.getBoundingClientRect();
+    const sourceRect = connectionState.draggingFromPort.getBoundingClientRect();
+    
+    // Calculate source port position
+    const sourceX = sourceRect.right - containerRect.left;
+    const sourceY = sourceRect.top + sourceRect.height / 2 - containerRect.top;
+    
+    // Calculate current mouse position
+    const targetX = e.clientX - containerRect.left;
+    const targetY = e.clientY - containerRect.top;
+    
+    // Update preview line
+    connectionState.previewLine.setAttribute('x1', sourceX);
+    connectionState.previewLine.setAttribute('y1', sourceY);
+    connectionState.previewLine.setAttribute('x2', targetX);
+    connectionState.previewLine.setAttribute('y2', targetY);
+    
+    // Highlight input ports on hover
+    const inputPort = document.elementFromPoint(e.clientX, e.clientY);
+    if (inputPort && inputPort.classList.contains('card-port') && inputPort.classList.contains('input')) {
+      inputPort.style.background = '#0d47a1';
+      inputPort.style.transform = 'translateY(-50%) scale(1.3)';
+    } else {
+      document.querySelectorAll('.card-port.input').forEach(port => {
+        port.style.background = '#1967d2';
+        port.style.transform = 'translateY(-50%) scale(1)';
+      });
+    }
+  });
+  
+  // Handle mouseup to complete connection
+  document.addEventListener('mouseup', (e) => {
+    if (!connectionState.draggingFromPort || !connectionState.previewLine || !connectionState.isDragging) {
+      // Reset input port styles
+      document.querySelectorAll('.card-port.input').forEach(port => {
+        port.style.background = '#1967d2';
+        port.style.transform = 'translateY(-50%) scale(1)';
+      });
+      return;
+    }
+    
+    // Use elementFromPoint to get the element under the cursor (more reliable than e.target)
+    const elementUnderCursor = document.elementFromPoint(e.clientX, e.clientY);
+    let targetPort = null;
+    
+    if (elementUnderCursor) {
+      // Check if the element itself is an input port
+      if (elementUnderCursor.classList.contains('card-port') && elementUnderCursor.classList.contains('input')) {
+        targetPort = elementUnderCursor;
+      } else {
+        // Check if it's inside an input port
+        targetPort = elementUnderCursor.closest('.card-port.input');
+      }
+    }
+    
+    // Fallback: check e.target
+    if (!targetPort && e.target.classList.contains('card-port') && e.target.classList.contains('input')) {
+      targetPort = e.target;
+    }
+    
+    // Check if dropped on an input port
+    if (targetPort && targetPort.classList.contains('card-port') && targetPort.classList.contains('input')) {
+      const targetCard = targetPort.closest('.card');
+      if (targetCard && connectionState.sourceCardId) {
+        const targetCellId = targetCard.getAttribute('data-cell-id');
+        if (targetCellId && connectionState.sourceCardId) {
+          createCardDependency(connectionState.sourceCardId, targetCellId);
+        }
+      }
+    }
+    
+    // Clean up
+    if (connectionState.previewLine && connectionState.previewLine.parentNode) {
+      connectionState.previewLine.parentNode.removeChild(connectionState.previewLine);
+    }
+    connectionState.previewLine = null;
+    connectionState.draggingFromPort = null;
+    connectionState.sourceCardId = null;
+    connectionState.isDragging = false;
+    document.body.style.cursor = '';
+    
+    // Reset input port styles
+    document.querySelectorAll('.card-port.input').forEach(port => {
+      port.style.background = '#1967d2';
+      port.style.transform = 'translateY(-50%) scale(1)';
+    });
+  });
+}
+
+/**
+ * Show card controls when card is focused/selected
+ * 
+ * Adds the 'focused' class to the specified card and ensures
+ * both input and output ports are visible.
+ * 
+ * @param {string} cellId - Cell identifier of the card to focus
+ * @returns {void}
+ */
+function showCardControls(cellId) {
+  // Remove focused from all cards
+  document.querySelectorAll('.card').forEach(card => {
+    card.classList.remove('focused');
+  });
+  
+  // Add focused to this card
+  const card = document.getElementById(`card-${cellId}`);
+  if (card) {
+    card.classList.add('focused');
+    
+    // Ensure ports exist and are visible
+    const inputPort = card.querySelector('.card-port.input');
+    const outputPort = card.querySelector('.card-port.output');
+    
+    if (!inputPort) {
+      const newInputPort = document.createElement('div');
+      newInputPort.className = 'card-port input';
+      newInputPort.title = 'Drop connection here';
+      card.insertBefore(newInputPort, card.firstChild);
+    }
+    
+    if (!outputPort) {
+      const newOutputPort = document.createElement('div');
+      newOutputPort.className = 'card-port output';
+      newOutputPort.title = 'Drag to connect to another card';
+      const inputPortAfter = card.querySelector('.card-port.input');
+      if (inputPortAfter) {
+        inputPortAfter.insertAdjacentElement('afterend', newOutputPort);
+      } else {
+        card.insertBefore(newOutputPort, card.firstChild);
+      }
+    }
+    
+    // Force ports to be visible
+    if (inputPort) {
+      inputPort.style.opacity = '1';
+      inputPort.style.visibility = 'visible';
+    }
+    if (outputPort) {
+      outputPort.style.opacity = '1';
+      outputPort.style.visibility = 'visible';
+    }
+  }
+}
+
+/**
+ * Create a new card
+ */
+function createNewCard() {
+  // Ensure cards container is visible
+  const cardsContainer = document.getElementById('cards-container');
+  if (cardsContainer) {
+    const loadingEl = document.getElementById('firebase-loading');
+    if (loadingEl) {
+      loadingEl.style.display = 'none';
+    }
+    if (cardsContainer.style.display === 'none' || !cardsContainer.style.display) {
+      cardsContainer.style.display = 'block';
+    }
+  }
+  
+  // Generate a unique cell ID (A1, A2, B1, etc.)
+  let cellId = 'A1';
+  let row = 1;
+  let col = 0;
+  
+  // Find the next available ID
+  while (currentSheet.cells[cellId]) {
+    col++;
+    if (col > 25) {
+      col = 0;
+      row++;
+    }
+    cellId = String.fromCharCode(65 + col) + row;
+  }
+  
+  // Create cell object - always use the main model selector's current value
+  const mainModelSelect = document.getElementById('model-select');
+  const activeModel = mainModelSelect && mainModelSelect.value ? mainModelSelect.value : getDefaultModel();
+  
+  currentSheet.cells[cellId] = {
+    prompt: '',
+    output: '',
+    model: activeModel, // Use the actively selected model from the main selector
+    temperature: 0.7,
+    cellPrompt: '',
+    autoRun: false,
+    interval: 0,
+    generations: []
+  };
+  
+  // Save to database if sheet exists
+  if (currentSheet.id) {
+    saveCellToDatabase(cellId, '', '', activeModel, 0.7, '', false, 0);
+  }
+  
+  // Create and render the card
+  createCardForCell(cellId);
+  
+  // Focus on the new card's textarea
+  setTimeout(() => {
+    const textarea = document.getElementById(`prompt-${cellId}`);
+    if (textarea) {
+      textarea.focus();
+    }
+  }, 100);
+}
+
+/**
+ * Create a card for a specific cell
+ */
+function createCardForCell(cellId) {
+  const cell = currentSheet.cells[cellId];
+  if (!cell) return;
+  
+  const cardsDiv = document.getElementById('cards');
+  if (!cardsDiv) {
+    // Ensure cards div exists
+    const cardsContainer = document.getElementById('cards-container');
+    if (cardsContainer) {
+      const newCardsDiv = document.createElement('div');
+      newCardsDiv.id = 'cards';
+      newCardsDiv.style.cssText = 'position: relative; z-index: 2;';
+      cardsContainer.appendChild(newCardsDiv);
+    } else {
+      return;
+    }
+  }
+  
+  const cardsDivFinal = document.getElementById('cards');
+  if (!cardsDivFinal) return;
+  
+  // Check if card already exists
+  if (document.getElementById(`card-${cellId}`)) {
+    return;
+  }
+  
+  // Ensure cardPositions exists, initialize from currentSheet if available
+  if (typeof window.cardPositions === 'undefined') {
+    if (currentSheet && currentSheet.cardPositions) {
+      window.cardPositions = { ...currentSheet.cardPositions };
+    } else {
+      window.cardPositions = {};
+    }
+  }
+  const cardPositions = window.cardPositions;
+  
+  // Initialize position if not set
+  if (!cardPositions[cellId]) {
+    const cardWidth = 280;
+    const cardHeight = 200;
+    const spacing = 40;
+    let x = 40;
+    let y = 40;
+    
+    // Find empty spot
+    const existingPositions = Object.values(cardPositions);
+    while (existingPositions.some(pos => Math.abs(pos.x - x) < cardWidth + spacing && Math.abs(pos.y - y) < cardHeight + spacing)) {
+      x += cardWidth + spacing;
+      if (x > 1000) {
+        x = 40;
+        y += cardHeight + spacing;
+      }
+    }
+    
+    cardPositions[cellId] = { x, y };
+    // Save positions when new card is created
+    saveCardPositions();
+  }
+  
+  const pos = cardPositions[cellId];
+  const defaultModel = getDefaultModel();
+  const hasPrompt = cell.cellPrompt && cell.cellPrompt.trim() !== '';
+  const hasSelectedGenerations = cell.selectedGenerations && cell.selectedGenerations.length > 0;
+  
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = `card-${cellId}`;
+  card.setAttribute('data-cell-id', cellId);
+  card.style.left = `${pos.x}px`;
+  card.style.top = `${pos.y}px`;
+  
+  card.innerHTML = `
+    <div class="card-port input" title="Drop connection here"></div>
+    <div class="card-port output" title="Drag to connect to another card"></div>
+    <div class="card-header">
+      <span class="card-id">${cellId}</span>
+      <div class="card-header-actions">
+        <button class="card-modal-btn" onclick="openModal('${cellId}')" title="Open in modal">📋</button>
+        <button class="card-disconnect-btn" onclick="showDisconnectMenu(event, '${cellId}')" title="Disconnect cards">🔌</button>
+        <button class="card-delete-btn" onclick="deleteCard('${cellId}')" title="Delete card">🗑️</button>
+      </div>
+    </div>
+    <div class="card-content">
+      <textarea id="prompt-${cellId}" oninput="updatePrompt('${cellId}')" onfocus="showCardControls('${cellId}')" placeholder="Enter prompt...">${(cell.prompt || '')}</textarea>
+    </div>
+    <div class="card-controls">
+      <div class="cell-controls-header">
+        <span>Settings</span>
+        <span style="color: #5f6368; font-weight: 400;">${cellId}</span>
+      </div>
+      <div class="cell-controls-status" id="cell-status-${cellId}" style="display: none; padding: 6px 10px; border-bottom: 1px solid #e8eaed; background: #f8f9fa; font-size: 11px; color: #5f6368;"></div>
+      <div class="cell-controls-body">
+        <div class="cell-controls-main">
+          <div class="cell-control-group">
+            <label class="cell-control-label">AI Model</label>
+            <div class="cell-model-select-wrapper">
+              <button type="button" class="cell-model-button" id="model-btn-${cellId}" onclick="toggleModelDropdown('${cellId}')" title="Select AI Model">
+                <span class="model-button-text" id="model-text-${cellId}">Loading...</span>
+                <span class="model-button-arrow">▾</span>
+              </button>
+              <div class="cell-model-dropdown" id="model-dropdown-${cellId}" style="display: none;"></div>
+            </div>
+          </div>
+          <div class="cell-control-group">
+            <label class="cell-control-label">Temperature</label>
+            <div class="cell-temp-control">
+              <input type="range" class="cell-temp-slider" id="temp-slider-${cellId}" min="0" max="1" step="0.1" value="${(cell.temperature || 0.7)}" oninput="updateTempFromSlider('${cellId}', this.value)">
+              <input type="number" class="cell-temp-input" id="temp-${cellId}" min="0" max="1" step="0.1" value="${(cell.temperature || 0.7)}" onchange="updateCellTemperature('${cellId}')" title="Temperature (0-1)">
+            </div>
+          </div>
+          <div class="cell-control-group">
+            <label class="cell-control-label">Run Interval (seconds)</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="number" class="cell-interval-input" id="interval-${cellId}" min="0" step="1" value="${(cell.interval || 0)}" onchange="updateCellInterval('${cellId}')" placeholder="0 = disabled" style="width: 80px; padding: 4px 8px; border: 1px solid #dadce0; border-radius: 4px; font-size: 12px;">
+              <span style="font-size: 11px; color: #5f6368;">0 = disabled</span>
+            </div>
+          </div>
+        </div>
+        <div class="cell-controls-actions">
+          <label class="cell-auto-run-toggle" title="Auto-run when content changes or dependencies update">
+            <input type="checkbox" class="cell-auto-run-checkbox" id="auto-run-${cellId}" ${cell.autoRun ? 'checked' : ''} onchange="updateCellAutoRun('${cellId}')">
+            <span class="cell-auto-run-switch"></span>
+            <span class="auto-run-label-text">Auto</span>
+          </label>
+          <button class="cell-run-btn" onclick="runCell('${cellId}')" title="Run this card">Run</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  cardsDivFinal.appendChild(card);
+  
+  // Ensure ports exist (double-check)
+  ensureAllCardPorts();
+  
+  // Populate model selector and ensure it uses the main selector's value
+  if (typeof populateCellModelSelectors === 'function') {
+    const models = availableModels || window.availableModels || [];
+    if (models.length > 0) {
+      // Ensure the cell uses the main model selector's value if it doesn't have a model set
+      const mainModelSelect = document.getElementById('model-select');
+      const mainModelValue = mainModelSelect ? mainModelSelect.value : null;
+      if (mainModelValue && (!cell.model || cell.model === 'gpt-3.5-turbo')) {
+        // Update cell model to match main selector
+        cell.model = mainModelValue;
+        // Save to database if sheet exists
+        if (currentSheet.id) {
+          saveCellToDatabase(cellId, cell.prompt, cell.output, cell.model, cell.temperature, cell.cellPrompt, cell.autoRun, cell.interval || 0);
+        }
+      }
+      populateCellModelSelectors(models);
+      
+      // Explicitly update the button text for this new card
+      const button = document.getElementById(`model-btn-${cellId}`);
+      if (button && mainModelValue) {
+        const textSpan = button.querySelector('.model-button-text');
+        if (textSpan) {
+          const model = models.find(m => m.id === (cell.model || mainModelValue));
+          if (model) {
+            textSpan.textContent = model.name;
+          }
+        }
+      }
+    }
+  }
+  
+  // Redraw connection lines
+  if (typeof drawConnectionLines === 'function') {
+    drawConnectionLines();
+  }
+  
+  // Set up dragging if not already set up
+  if (typeof setupCardDragging === 'function') {
+    setupCardDragging();
+  }
+  
+  // Set up connections if not already set up
+  if (typeof setupCardConnections === 'function') {
+    setupCardConnections();
+  }
+  
+  // Initialize interval timer if needed
+  updateCellIntervalTimer(cellId);
+  
+  // Update connections immediately after card creation
+  // This ensures connections are visible right away
+  setTimeout(() => {
+    if (typeof drawConnectionLines === 'function') {
+      drawConnectionLines();
+    }
+  }, 50);
+}
+
+/**
+ * Ensure all cards have both input and output ports
+ * This function should be called whenever cards are rendered or updated
+ */
+function ensureAllCardPorts() {
+  document.querySelectorAll('.card').forEach(card => {
+    const inputPort = card.querySelector('.card-port.input');
+    const outputPort = card.querySelector('.card-port.output');
+    
+    if (!inputPort) {
+      const newInputPort = document.createElement('div');
+      newInputPort.className = 'card-port input';
+      newInputPort.title = 'Drop connection here';
+      card.insertBefore(newInputPort, card.firstChild);
+    }
+    
+    if (!outputPort) {
+      const newOutputPort = document.createElement('div');
+      newOutputPort.className = 'card-port output';
+      newOutputPort.title = 'Drag to connect to another card';
+      const inputPortAfter = card.querySelector('.card-port.input');
+      if (inputPortAfter) {
+        inputPortAfter.insertAdjacentElement('afterend', newOutputPort);
+      } else {
+        card.insertBefore(newOutputPort, card.firstChild);
+      }
+    }
+  });
+}
+
+/**
+ * Show disconnect menu for a card
+ */
+function showDisconnectMenu(event, cellId) {
+  event.stopPropagation();
+  
+  // Remove existing menu
+  const existingMenu = document.querySelector('.disconnect-menu');
+  if (existingMenu) {
+    existingMenu.remove();
+  }
+  
+  const cell = currentSheet.cells[cellId];
+  if (!cell || !cell.prompt) return;
+  
+  // Parse dependencies
+  const deps = parseDependencies(cell.prompt);
+  if (deps.length === 0) {
+    showSuccess('This card has no dependencies');
+    return;
+  }
+  
+  // Extract unique cell IDs from dependencies (handle formats like "A1", "prompt:A1", etc.)
+  const uniqueCellIds = new Set();
+  deps.forEach(depRef => {
+    let cellId = depRef;
+    // Skip cross-sheet references
+    if (cellId.includes('!')) return;
+    // Remove prefixes like "prompt:", "output:"
+    if (cellId.includes(':')) {
+      const parts = cellId.split(':');
+      cellId = parts[parts.length - 1];
+    }
+    // Remove generation suffixes like "-1", ":1-3", ":2"
+    if (cellId.includes('-')) {
+      cellId = cellId.split('-')[0];
+    }
+    // Remove any remaining colons
+    cellId = cellId.split(':')[0];
+    if (cellId) {
+      uniqueCellIds.add(cellId);
+    }
+  });
+  
+  if (uniqueCellIds.size === 0) {
+    showSuccess('This card has no dependencies');
+    return;
+  }
+  
+  // Create menu
+  const menu = document.createElement('div');
+  menu.className = 'disconnect-menu';
+  menu.style.position = 'absolute';
+  menu.style.left = event.clientX + 'px';
+  menu.style.top = event.clientY + 'px';
+  
+  menu.innerHTML = `
+    <div style="padding: 8px 12px; font-size: 11px; font-weight: 600; color: #5f6368; border-bottom: 1px solid #e8eaed;">Disconnect from:</div>
+    ${Array.from(uniqueCellIds).map(depCellId => `
+      <div class="disconnect-menu-item" onclick="removeCardDependency('${cellId}', '${depCellId}'); this.closest('.disconnect-menu').remove();">
+        <span>${depCellId}</span>
+        <span class="disconnect-icon">✕</span>
+      </div>
+    `).join('')}
+  `;
+  
+  document.body.appendChild(menu);
+  
+  // Close menu when clicking outside
+  setTimeout(() => {
+    document.addEventListener('click', function closeMenu(e) {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('click', closeMenu);
+      }
+    });
+  }, 0);
+}
+
+/**
+ * Remove a dependency between two cards
+ */
+/**
+ * Create a dependency between two cards
+ * @param {string} sourceCellId The source card ID (output port)
+ * @param {string} targetCellId The target card ID (input port)
+ */
+/**
+ * Create a dependency connection between two cards
+ * 
+ * Adds a dependency reference ({{sourceCellId}}) to the target card's prompt
+ * and creates the target card if it doesn't exist. Also saves to database
+ * and redraws connection lines.
+ * 
+ * @param {string} sourceCellId - Source card ID (where connection starts)
+ * @param {string} targetCellId - Target card ID (where connection ends)
+ * @returns {void}
+ */
+function createCardDependency(sourceCellId, targetCellId) {
+  // Don't allow self-connections
+  if (sourceCellId === targetCellId) {
+    showError('Cannot connect a card to itself');
+    return;
+  }
+  
+  // Ensure source cell exists
+  if (!currentSheet.cells[sourceCellId]) {
+    const defaultModel = getDefaultModel();
+    currentSheet.cells[sourceCellId] = {
+      prompt: '',
+      output: '',
+      model: defaultModel,
+      temperature: 0.7,
+      cellPrompt: '',
+      autoRun: false,
+      interval: 0,
+      generations: []
+    };
+  }
+  
+  const targetCell = currentSheet.cells[targetCellId];
+  if (!targetCell) {
+    // Create the cell if it doesn't exist
+    const defaultModel = getDefaultModel();
+    currentSheet.cells[targetCellId] = {
+      prompt: '',
+      output: '',
+      model: defaultModel,
+      temperature: 0.7,
+      cellPrompt: '',
+      autoRun: false,
+      interval: 0,
+      generations: []
+    };
+    
+    // Create the card in the DOM if it doesn't exist
+    if (!document.getElementById(`card-${targetCellId}`)) {
+      createCardForCell(targetCellId);
+    }
+  }
+  
+  // Check if dependency already exists (need to get targetCell again after potential creation)
+  const finalTargetCell = currentSheet.cells[targetCellId];
+  if (!finalTargetCell) {
+    showError(`Failed to create target card ${targetCellId}`);
+    return;
+  }
+  
+  const dependencyPattern = new RegExp(`\\{\\{${sourceCellId}\\}\\}`, 'g');
+  if (finalTargetCell.prompt && dependencyPattern.test(finalTargetCell.prompt)) {
+    showError(`Card ${targetCellId} already depends on ${sourceCellId}`);
+    return;
+  }
+  
+  // Add dependency to prompt (use finalTargetCell)
+  const dependency = `{{${sourceCellId}}}`;
+  if (finalTargetCell.prompt) {
+    finalTargetCell.prompt = finalTargetCell.prompt.trim() + ' ' + dependency;
+  } else {
+    finalTargetCell.prompt = dependency;
+  }
+  
+  // Update the textarea if it exists
+  const textarea = document.getElementById(`prompt-${targetCellId}`);
+  if (textarea) {
+    textarea.value = finalTargetCell.prompt;
+  }
+  
+  // Save to database
+  if (currentSheet.id) {
+    saveCellToDatabase(targetCellId, finalTargetCell.prompt, finalTargetCell.output, finalTargetCell.model, finalTargetCell.temperature, finalTargetCell.cellPrompt, finalTargetCell.autoRun, finalTargetCell.interval);
+  }
+  
+  // Redraw connection lines
+  if (typeof drawConnectionLines === 'function') {
+    drawConnectionLines();
+  }
+  
+  // Ensure all cards have ports
+  ensureAllCardPorts();
+  
+  // Show success message
+  showSuccess(`Connected ${sourceCellId} to ${targetCellId}`);
+}
+
+/**
+ * Delete a card and all its data
+ * 
+ * Removes the card from the DOM, deletes it from the database,
+ * removes all connections to it, and cleans up related state.
+ * 
+ * @param {string} cellId - The cell ID to delete
+ * @returns {Promise<void>}
+ */
+async function deleteCard(cellId) {
+  // Confirm deletion
+  if (!confirm(`Are you sure you want to delete card ${cellId}? This will also remove all connections to this card.`)) {
+    return;
+  }
+  
+  // Find all cards that depend on this card
+  const dependentCards = [];
+  for (const [otherCellId, otherCell] of Object.entries(currentSheet.cells)) {
+    if (otherCellId === cellId) continue;
+    if (otherCell && otherCell.prompt) {
+      const deps = parseDependencies(otherCell.prompt);
+      // Check if any dependency references this cell
+      const hasDependency = deps.some(depRef => {
+        let depId = depRef;
+        // Extract cell ID from reference
+        if (depId.includes(':')) {
+          const parts = depId.split(':');
+          depId = parts[parts.length - 1];
+        }
+        if (depId.includes('-')) {
+          depId = depId.split('-')[0];
+        }
+        depId = depId.split(':')[0];
+        return depId === cellId;
+      });
+      
+      if (hasDependency) {
+        dependentCards.push(otherCellId);
+      }
+    }
+  }
+  
+  // Remove dependencies from dependent cards
+  for (const dependentCellId of dependentCards) {
+    removeCardDependency(dependentCellId, cellId);
+  }
+  
+  // Clear interval timer if exists
+  if (cellIntervalTimers[cellId]) {
+    clearInterval(cellIntervalTimers[cellId]);
+    delete cellIntervalTimers[cellId];
+  }
+  
+  // Remove from currentSheet.cells
+  delete currentSheet.cells[cellId];
+  
+  // Remove card position
+  if (window.cardPositions && window.cardPositions[cellId]) {
+    delete window.cardPositions[cellId];
+  }
+  
+  // Close modal if it's open for this card
+  if (currentModalCellId === cellId) {
+    closeModal();
+  }
+  
+  // Remove from DOM
+  const cardElement = document.getElementById(`card-${cellId}`);
+  if (cardElement) {
+    cardElement.remove();
+  }
+  
+  // Delete from database
+  if (currentSheet.id && typeof firestoreService !== 'undefined' && firestoreService.deleteCell) {
+    try {
+      const userId = currentUser ? currentUser.uid : 'demo-user-123';
+      const projectId = currentProjectId || 'default-project';
+      await firestoreService.deleteCell(userId, projectId, currentSheet.id, cellId);
+    } catch (error) {
+      // Silently handle error - card is already removed from UI
+    }
+  }
+  
+  // Redraw connection lines
+  if (typeof drawConnectionLines === 'function') {
+    drawConnectionLines();
+  }
+  
+  // Ensure all remaining cards have ports
+  ensureAllCardPorts();
+  
+  // Re-render grid to update empty state if needed
+  const allCellIds = Object.keys(currentSheet.cells);
+  if (allCellIds.length === 0) {
+    renderGrid();
+  }
+  
+  // Show success message
+  showSuccess(`Card ${cellId} deleted`);
+}
+
+/**
+ * Remove a dependency connection between two cards
+ * 
+ * Removes the dependency reference from the target card's prompt,
+ * handles various reference formats, and updates the UI.
+ * 
+ * @param {string} targetCellId - Target card ID (where dependency is removed from)
+ * @param {string} sourceCellIdOrRef - Source cell ID or reference string to remove
+ * @returns {void}
+ */
+function removeCardDependency(targetCellId, sourceCellIdOrRef) {
+  const targetCell = currentSheet.cells[targetCellId];
+  if (!targetCell) return;
+  
+  // Extract cell ID from reference if needed (handle formats like "A1", "prompt:A1", etc.)
+  let sourceCellId = sourceCellIdOrRef;
+  if (sourceCellIdOrRef.includes(':')) {
+    const parts = sourceCellIdOrRef.split(':');
+    sourceCellId = parts[parts.length - 1];
+  }
+  if (sourceCellId.includes('-')) {
+    sourceCellId = sourceCellId.split('-')[0];
+  }
+  sourceCellId = sourceCellId.split(':')[0];
+  
+  // Remove dependency from prompt (match the exact format in the prompt)
+  // Try both {{sourceCellId}} and {{prompt:sourceCellId}}, {{output:sourceCellId}}, etc.
+  const patterns = [
+    new RegExp(`\\{\\{${sourceCellId}\\}\\}`, 'g'),
+    new RegExp(`\\{\\{prompt:${sourceCellId}\\}\\}`, 'g'),
+    new RegExp(`\\{\\{output:${sourceCellId}\\}\\}`, 'g'),
+    new RegExp(`\\{\\{${sourceCellIdOrRef}\\}\\}`, 'g')
+  ];
+  
+  if (targetCell.prompt) {
+    let updatedPrompt = targetCell.prompt;
+    patterns.forEach(pattern => {
+      updatedPrompt = updatedPrompt.replace(pattern, '');
+    });
+    targetCell.prompt = updatedPrompt.trim().replace(/\s+/g, ' '); // Clean up extra spaces
+  }
+  
+  // Update the textarea if it exists
+  const textarea = document.getElementById(`prompt-${targetCellId}`);
+  if (textarea) {
+    textarea.value = targetCell.prompt;
+  }
+  
+  // Save to database
+  if (currentSheet.id) {
+    saveCellToDatabase(targetCellId, targetCell.prompt, targetCell.output, targetCell.model, targetCell.temperature, targetCell.cellPrompt, targetCell.autoRun, targetCell.interval);
+  }
+  
+  // Redraw connection lines
+  if (typeof drawConnectionLines === 'function') {
+    drawConnectionLines();
+  }
+  
+  // Ensure all cards have ports
+  ensureAllCardPorts();
+  
+  // Show success message
+  showSuccess(`Disconnected ${sourceCellId} from ${targetCellId}`);
+}
+
+// ============================================================================
+// SECTION 11: GLOBAL EXPORTS
+// ============================================================================
+
+/**
+ * Expose functions to global scope for inline event handlers
+ * These functions are called from HTML onclick attributes
+ */
+window.createNewCard = createNewCard;
+window.createCardForCell = createCardForCell;
+window.showCardControls = showCardControls;
+window.showDisconnectMenu = showDisconnectMenu;
+window.removeCardDependency = removeCardDependency;
+window.createCardDependency = createCardDependency;
+window.deleteCard = deleteCard;
+window.drawConnectionLines = drawConnectionLines;
+window.setupCardDragging = setupCardDragging;
+window.setupCardEventDelegation = setupCardEventDelegation;
+window.setupCardConnections = setupCardConnections;
+window.updateCellInterval = updateCellInterval;
+window.runCellWithDependencies = runCellWithDependencies;
+window.toggleModelDropdown = toggleModelDropdown;
+window.selectCellModel = selectCellModel;
+window.handleProfileClick = handleProfileClick;
+window.handleSettingsClick = handleSettingsClick;
+window.handleUsageClick = handleUsageClick;
+window.handleAdminClick = handleAdminClick;
+window.handleLogoutClick = handleLogoutClick;
 
 // Model loading is now handled in initializeApp() function
