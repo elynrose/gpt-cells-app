@@ -1,7 +1,7 @@
 /**
  * GPT Cells Application Server
  * A Node.js server providing AI-powered spreadsheet functionality
- * with support for text, image, and audio generation
+ * with support for text, image, video, and audio generation
  */
 
 const http = require('http');
@@ -14,7 +14,7 @@ const sqlite3 = require('sqlite3').verbose();
 require('dotenv').config();
 
 // Firebase server integration for cloud deployment
-const { initializeFirebase, getFalAIApiKey, getOpenRouterApiKey, getActiveModelsFromFirebase } = require('./firebase-server-config');
+const { initializeFirebase, getFalAIApiKey, getOpenRouterApiKey, getActiveModelsFromFirebase, diagnoseFirebaseModels } = require('./firebase-server-config');
 
 // Local development configuration
 const { initializeLocalDev, getFalAIApiKeyLocal, getActiveModelsLocal } = require('./local-dev-config');
@@ -375,6 +375,7 @@ const MODEL_PROVIDERS = {
       { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', description: 'Previous generation GPT-4' },
       { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: 'Fast and efficient model' },
       { id: 'dall-e-3', name: 'DALL-E 3', description: 'AI image generation model', type: 'image' },
+      { id: 'sora-2', name: 'Sora 2', description: 'OpenAI Sora 2 - Advanced video generation with text-to-video and image-to-video', type: 'video' },
       { id: 'tts-1', name: 'TTS-1', description: 'Text-to-Speech model', type: 'audio' },
       { id: 'tts-1-hd', name: 'TTS-1 HD', description: 'High-definition Text-to-Speech model', type: 'audio' },
       // Add more OpenAI models here:
@@ -528,14 +529,29 @@ async function fetchAvailableModels() {
   const allModels = [];
   
   try {
-    // Only load models from Firestore (production deployment)
+    // Try to load models from Firestore (production deployment)
     const models = await getActiveModelsFromFirebase();
     
     if (models.length > 0) {
       allModels.push(...models);
+      console.log(`✅ Loaded ${models.length} models from Firebase`);
     } else {
+      // Fallback to local models if Firebase returns empty
+      console.log('⚠️ No models found in Firebase, using local fallback');
+      const localModels = await getActiveModelsLocal();
+      allModels.push(...localModels);
+      console.log(`✅ Loaded ${localModels.length} models from local fallback`);
     }
   } catch (error) {
+    // Fallback to local models if Firebase fails
+    console.log('⚠️ Error loading models from Firebase, using local fallback:', error.message);
+    try {
+      const localModels = await getActiveModelsLocal();
+      allModels.push(...localModels);
+      console.log(`✅ Loaded ${localModels.length} models from local fallback`);
+    } catch (localError) {
+      console.error('❌ Error loading local models:', localError.message);
+    }
   }
   
   return allModels;
@@ -609,15 +625,225 @@ async function getOriginalModelId(sanitizedId) {
 }
 
 /**
- * Call AI API with hybrid approach: Fal.ai for images, OpenRouter for text
+ * Poll Sora 2 video job status until completion
+ * 
+ * @param {string} jobId - Video job ID from OpenAI
+ * @param {string} apiKey - OpenAI API key
+ * @param {Function} resolve - Promise resolve function
+ * @param {Function} reject - Promise reject function
+ * @param {number} maxAttempts - Maximum polling attempts (default: 60)
+ * @param {number} attempt - Current attempt number
+ */
+function pollVideoJobStatus(jobId, apiKey, resolve, reject, maxAttempts = 60, attempt = 0) {
+  if (attempt >= maxAttempts) {
+    reject(new Error('Video generation timed out. Job may still be processing.'));
+    return;
+  }
+  
+  const options = {
+    hostname: 'api.openai.com',
+    port: 443,
+    path: `/v1/videos/${jobId}`,
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`
+    }
+  };
+  
+  const req = https.request(options, (res) => {
+    let responseData = '';
+    res.on('data', (chunk) => {
+      responseData += chunk;
+    });
+    res.on('end', () => {
+      if (res.statusCode >= 400) {
+        reject(new Error(`OpenAI API Error ${res.statusCode}: ${responseData.substring(0, 200)}`));
+        return;
+      }
+      
+      try {
+        const parsed = JSON.parse(responseData);
+        const status = parsed.status;
+        
+        if (status === 'completed') {
+          // Get the video content URL from the job response
+          // According to OpenAI docs, the video_url is in the job object when completed
+          const videoUrl = parsed.video_url || parsed.video?.url || parsed.url;
+          if (videoUrl) {
+            resolve(videoUrl);
+          } else {
+            // Try to get video content directly via content endpoint
+            getVideoContent(jobId, apiKey, resolve, reject);
+          }
+        } else if (status === 'failed') {
+          reject(new Error(`Video generation failed: ${parsed.error?.message || 'Unknown error'}`));
+        } else {
+          // Still processing, poll again after 2 seconds
+          setTimeout(() => {
+            pollVideoJobStatus(jobId, apiKey, resolve, reject, maxAttempts, attempt + 1);
+          }, 2000);
+        }
+      } catch (error) {
+        reject(new Error(`Invalid JSON response: ${responseData.substring(0, 200)}`));
+      }
+    });
+  });
+  
+  req.on('error', (error) => {
+    reject(error);
+  });
+  
+  req.end();
+}
+
+/**
+ * Get video content URL from completed job
+ * 
+ * @param {string} jobId - Video job ID
+ * @param {string} apiKey - OpenAI API key
+ * @param {Function} resolve - Promise resolve function
+ * @param {Function} reject - Promise reject function
+ */
+function getVideoContent(jobId, apiKey, resolve, reject) {
+  const options = {
+    hostname: 'api.openai.com',
+    port: 443,
+    path: `/v1/videos/${jobId}/content`,
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`
+    }
+  };
+  
+  const req = https.request(options, (res) => {
+    if (res.statusCode === 302 || res.statusCode === 301) {
+      // Redirect to video URL
+      const location = res.headers.location;
+      if (location) {
+        resolve(location);
+      } else {
+        reject(new Error('Video URL not found in redirect'));
+      }
+    } else if (res.statusCode >= 400) {
+      let errorData = '';
+      res.on('data', (chunk) => {
+        errorData += chunk;
+      });
+      res.on('end', () => {
+        reject(new Error(`Failed to get video content: ${errorData.substring(0, 200)}`));
+      });
+    } else {
+      // Video content as binary - return redirect URL if available, otherwise handle binary
+      const location = res.headers.location;
+      if (location) {
+        resolve(location);
+      } else {
+        // If no redirect, check if there's a video_url in the response
+        let responseData = '';
+        res.on('data', (chunk) => {
+          responseData += chunk;
+        });
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(responseData);
+            if (parsed.video_url || parsed.url) {
+              resolve(parsed.video_url || parsed.url);
+            } else {
+              // Return the job status with instructions
+              resolve(`Video generation in progress. Job ID: ${jobId}. Please check the job status.`);
+            }
+          } catch (error) {
+            // Binary video data - would need storage solution
+            reject(new Error('Video content received as binary. Please check job status endpoint for video URL.'));
+          }
+        });
+      }
+    }
+  });
+  
+  req.on('error', (error) => {
+    reject(error);
+  });
+  
+  req.end();
+}
+
+/**
+ * Call AI API with hybrid approach: Fal.ai for images, OpenRouter for text, OpenAI for videos
  */
 async function callHybridAI(model, prompt, temperature = 0.7) {
   try {
-    // Determine if this is an image generation model
-    const isImageModel = model.includes('flux') || model.includes('stable-diffusion') || model.includes('recraft');
+    // Determine model type
+    const isImageModel = model.includes('flux') || model.includes('stable-diffusion') || model.includes('recraft') || model.includes('dall-e');
+    const isVideoModel = model.includes('sora') || model.includes('runway') || model.includes('pika') || model.includes('stable-video');
     const isTextModel = model.includes('llama') || model.includes('mistral') || model.includes('codellama') || model.includes('gpt') || model.includes('claude') || model.includes('gemini');
     
-    if (isImageModel) {
+    if (isVideoModel && model.includes('sora-2')) {
+      // Video generation via OpenAI Sora 2 API
+      const openaiApiKey = process.env.OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        throw new Error('OpenAI API key is required for Sora 2 video generation. Please configure OPENAI_API_KEY in Railway.');
+      }
+      
+      // Sora 2 uses the /videos endpoint
+      // According to OpenAI docs: https://platform.openai.com/docs/guides/video-generation
+      // We'll create the video job and poll for completion
+      const requestData = JSON.stringify({
+        model: 'sora-2',
+        prompt: prompt,
+        size: '1280x720', // Default resolution (can be 1280x720, 1920x1080, etc.)
+        seconds: 8 // Default duration (can be 5-60 seconds)
+      });
+      
+      // Create video generation job
+      return new Promise((resolve, reject) => {
+        const options = {
+          hostname: 'api.openai.com',
+          port: 443,
+          path: '/v1/videos',
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(requestData)
+          }
+        };
+        
+        const req = https.request(options, (res) => {
+          let responseData = '';
+          res.on('data', (chunk) => {
+            responseData += chunk;
+          });
+          res.on('end', () => {
+            if (res.statusCode >= 400) {
+              reject(new Error(`OpenAI API Error ${res.statusCode}: ${responseData.substring(0, 200)}`));
+              return;
+            }
+            
+            try {
+              const parsed = JSON.parse(responseData);
+              // Sora 2 returns a job object with id and status
+              if (parsed.id) {
+                // Poll for job completion
+                pollVideoJobStatus(parsed.id, openaiApiKey, resolve, reject);
+              } else {
+                reject(new Error('Invalid response from OpenAI: missing job ID'));
+              }
+            } catch (error) {
+              reject(new Error(`Invalid JSON response: ${responseData.substring(0, 200)}`));
+            }
+          });
+        });
+        
+        req.on('error', (error) => {
+          reject(error);
+        });
+        
+        req.write(requestData);
+        req.end();
+      });
+      
+    } else if (isImageModel) {
       // Image generation via Fal.ai
       
       // Get Fal.ai API key from environment variables
@@ -932,6 +1158,21 @@ window.storage = storage;`;
       handleError(res, 429, 'Rate limit exceeded. Please try again later.');
       return;
     }
+
+  // Diagnostic endpoint for Firebase models
+  if (req.url === '/api/models/diagnose') {
+    try {
+      const diagnosis = await diagnoseFirebaseModels();
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(diagnosis));
+    } catch (error) {
+      res.statusCode = 500;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: error.message }));
+    }
+    return;
+  }
 
   // Handle API endpoints
   if (req.url === '/api/models') {

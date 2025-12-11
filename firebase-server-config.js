@@ -199,33 +199,77 @@ async function getOpenRouterApiKey() {
 async function getActiveModelsFromFirebase() {
   try {
     if (!firestore) {
+      console.log('🔄 Initializing Firebase for models...');
       await initializeFirebase();
     }
 
     if (!firestore) {
-      console.log('⚠️ Firebase not available for models');
+      console.log('⚠️ Firebase not available for models - firestore is null');
       return [];
     }
 
-    const modelsSnapshot = await firestore.collection('models').where('isActive', '==', true).get();
+    console.log('🔍 Querying Firestore for active models...');
+    
+    // Try querying by isActive first
+    let modelsSnapshot;
+    try {
+      modelsSnapshot = await firestore.collection('models').where('isActive', '==', true).get();
+      console.log(`📊 Query by isActive returned ${modelsSnapshot.size} documents`);
+    } catch (queryError) {
+      console.log('⚠️ Query by isActive failed, trying alternative query:', queryError.message);
+      // Fallback: try querying by status
+      try {
+        modelsSnapshot = await firestore.collection('models').where('status', '==', 'active').get();
+        console.log(`📊 Query by status returned ${modelsSnapshot.size} documents`);
+      } catch (statusError) {
+        console.log('⚠️ Query by status also failed, getting all models and filtering:', statusError.message);
+        // Last resort: get all models and filter in memory
+        modelsSnapshot = await firestore.collection('models').get();
+        console.log(`📊 Retrieved all ${modelsSnapshot.size} models, filtering for active ones`);
+      }
+    }
+    
     const models = [];
     
     modelsSnapshot.forEach(doc => {
       const modelData = doc.data();
-      models.push({
-        id: doc.id,
-        name: modelData.name,
-        type: modelData.type,
-        provider: modelData.provider,
-        active: modelData.isActive
-      });
+      
+      // Check if model is active (support both isActive and status fields)
+      const isActive = modelData.isActive === true || modelData.status === 'active';
+      
+      if (isActive) {
+        models.push({
+          id: doc.id,
+          name: modelData.name || doc.id,
+          type: modelData.type || 'text',
+          provider: modelData.provider || 'unknown',
+          active: true,
+          description: modelData.description || ''
+        });
+      }
     });
 
-    console.log(`✅ Retrieved ${models.length} active models from Firebase`);
+    console.log(`✅ Retrieved ${models.length} active models from Firebase (out of ${modelsSnapshot.size} total)`);
+    
+    if (models.length === 0 && modelsSnapshot.size > 0) {
+      console.log('⚠️ No active models found, but models exist in collection. Check isActive/status fields.');
+      // Log first model structure for debugging
+      const firstDoc = modelsSnapshot.docs[0];
+      if (firstDoc) {
+        console.log('📋 Sample model structure:', JSON.stringify(firstDoc.data(), null, 2));
+      }
+    }
+    
     return models;
     
   } catch (error) {
     console.error('❌ Error getting models from Firebase:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error details:', {
+      message: error.message,
+      code: error.code,
+      name: error.name
+    });
     return [];
   }
 }
@@ -268,10 +312,67 @@ async function saveGenerationToFirebase(userId, projectId, sheetId, cellId, gene
   }
 }
 
+/**
+ * Diagnostic function to check Firebase connection and models collection
+ */
+async function diagnoseFirebaseModels() {
+  try {
+    console.log('🔍 Diagnosing Firebase models connection...');
+    
+    if (!firestore) {
+      console.log('⚠️ Firestore not initialized, attempting initialization...');
+      await initializeFirebase();
+    }
+    
+    if (!firestore) {
+      return {
+        initialized: false,
+        error: 'Firestore could not be initialized',
+        modelsCount: 0
+      };
+    }
+    
+    console.log('✅ Firestore is initialized');
+    
+    // Try to get all models (no filter) to see if collection exists
+    const allModelsSnapshot = await firestore.collection('models').get();
+    const allModels = [];
+    
+    allModelsSnapshot.forEach(doc => {
+      allModels.push({
+        id: doc.id,
+        data: doc.data()
+      });
+    });
+    
+    console.log(`📊 Total models in collection: ${allModels.length}`);
+    
+    if (allModels.length > 0) {
+      console.log('📋 Sample model:', JSON.stringify(allModels[0], null, 2));
+    }
+    
+    return {
+      initialized: true,
+      modelsCount: allModels.length,
+      models: allModels,
+      sampleModel: allModels.length > 0 ? allModels[0] : null
+    };
+    
+  } catch (error) {
+    console.error('❌ Diagnostic error:', error);
+    return {
+      initialized: false,
+      error: error.message,
+      modelsCount: 0
+    };
+  }
+}
+
 module.exports = {
   initializeFirebase,
   getFalAIApiKey,
   getOpenRouterApiKey,
   getActiveModelsFromFirebase,
-  saveGenerationToFirebase
+  saveGenerationToFirebase,
+  diagnoseFirebaseModels
 };
