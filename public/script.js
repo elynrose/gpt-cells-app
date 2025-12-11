@@ -2808,6 +2808,144 @@ async function resolveCellReference(reference) {
 }
 
 /**
+ * Extract the most recent image URL from referenced cells
+ * 
+ * Checks all referenced cells (from dependencies) to find image URLs.
+ * Prioritizes the most recent generation, then current output, then older generations.
+ * 
+ * @param {Array<string>} depIds - Array of dependency cell IDs/references
+ * @returns {Promise<string|null>} The most recent image URL found, or null if none found
+ * 
+ * @example
+ * const imageUrl = await extractImageUrlFromReferencedCells(['A1', 'B2']);
+ * if (imageUrl) console.log('Found image:', imageUrl);
+ */
+async function extractImageUrlFromReferencedCells(depIds) {
+  const imageUrls = [];
+  
+  for (const depId of depIds) {
+    try {
+      // Parse the reference to get the cell ID and sheet
+      let targetSheet = currentSheet;
+      let cellId = depId;
+      let returnType = 'output';
+      
+      // Handle cross-sheet references
+      if (depId.includes('!')) {
+        const exclamationIndex = depId.indexOf('!');
+        const sheetName = depId.substring(0, exclamationIndex);
+        cellId = depId.substring(exclamationIndex + 1);
+        targetSheet = sheets.find(sheet => sheet.name === sheetName) || currentSheet;
+      }
+      
+      // Handle type prefixes
+      if (depId.includes(':') && (depId.startsWith('prompt:') || depId.startsWith('output:'))) {
+        const colonIndex = depId.indexOf(':');
+        returnType = depId.substring(0, colonIndex);
+        const remaining = depId.substring(colonIndex + 1);
+        if (remaining.includes('!')) {
+          const exclamationIndex = remaining.indexOf('!');
+          const sheetName = remaining.substring(0, exclamationIndex);
+          cellId = remaining.substring(exclamationIndex + 1);
+          targetSheet = sheets.find(sheet => sheet.name === sheetName) || currentSheet;
+        } else {
+          cellId = remaining;
+        }
+      }
+      
+      // Handle generation-specific references (A1-1, A1:2, etc.)
+      let generationSpec = null;
+      if (cellId.includes('-') || cellId.includes(':')) {
+        if (cellId.includes('-') && !cellId.includes(':')) {
+          const parts = cellId.split('-');
+          if (parts.length === 2 && !isNaN(parseInt(parts[1]))) {
+            cellId = parts[0];
+            generationSpec = { type: 'single', index: parseInt(parts[1]) - 1 };
+          }
+        } else if (cellId.includes(':')) {
+          const parts = cellId.split(':');
+          if (parts.length === 2) {
+            const genPart = parts[1];
+            if (genPart.includes('-')) {
+              const [start, end] = genPart.split('-').map(n => parseInt(n) - 1);
+              if (!isNaN(start) && !isNaN(end)) {
+                cellId = parts[0];
+                generationSpec = { type: 'range', start, end };
+              }
+            } else {
+              const genIndex = parseInt(genPart);
+              if (!isNaN(genIndex)) {
+                cellId = parts[0];
+                generationSpec = { type: 'single', index: genIndex - 1 };
+              }
+            }
+          }
+        }
+      }
+      
+      // Ensure cells are loaded for the target sheet
+      if (!targetSheet.cells || Object.keys(targetSheet.cells).length === 0) {
+        await loadSheetCellsForSheet(targetSheet);
+      }
+      
+      const refCell = targetSheet.cells[cellId];
+      if (!refCell) continue;
+      
+      // Check generations first (most recent first)
+      if (refCell.generations && refCell.generations.length > 0) {
+        if (generationSpec) {
+          // Check specific generation(s)
+          if (generationSpec.type === 'single') {
+            const gen = refCell.generations[generationSpec.index];
+            if (gen && gen.output && isImageUrl(gen.output)) {
+              imageUrls.push({ url: gen.output, timestamp: gen.timestamp || '' });
+            }
+          } else if (generationSpec.type === 'range') {
+            const { start, end } = generationSpec;
+            for (let i = end; i >= start; i--) {
+              const gen = refCell.generations[i];
+              if (gen && gen.output && isImageUrl(gen.output)) {
+                imageUrls.push({ url: gen.output, timestamp: gen.timestamp || '' });
+                break; // Use the most recent in range
+              }
+            }
+          }
+        } else {
+          // Check all generations, most recent first
+          for (let i = refCell.generations.length - 1; i >= 0; i--) {
+            const gen = refCell.generations[i];
+            if (gen && gen.output && isImageUrl(gen.output)) {
+              imageUrls.push({ url: gen.output, timestamp: gen.timestamp || '' });
+              break; // Use the most recent image
+            }
+          }
+        }
+      }
+      
+      // Check current output if no image found in generations and not looking for prompt
+      if (returnType !== 'prompt' && imageUrls.length === 0 && refCell.output && isImageUrl(refCell.output)) {
+        imageUrls.push({ url: refCell.output, timestamp: new Date().toISOString() });
+      }
+    } catch (error) {
+      console.error(`Error extracting image from cell reference ${depId}:`, error);
+    }
+  }
+  
+  // Return the most recent image URL (by timestamp, or first found if no timestamps)
+  if (imageUrls.length > 0) {
+    // Sort by timestamp (most recent first)
+    imageUrls.sort((a, b) => {
+      if (!a.timestamp) return 1;
+      if (!b.timestamp) return -1;
+      return new Date(b.timestamp) - new Date(a.timestamp);
+    });
+    return imageUrls[0].url;
+  }
+  
+  return null;
+}
+
+/**
  * Use selected generations in the current cell
  * 
  * Collects all checked generation checkboxes from the modal and stores
@@ -3330,20 +3468,100 @@ async function runCell(id, visited = new Set()) {
   // Replace all dependency references in the prompt
   for (const depId of deps) {
     const replacement = await resolveCellReference(depId);
-
+    
     // Ensure replacement is a string and handle undefined/null
     const replacementValue = replacement !== null && replacement !== undefined ? String(replacement) : '[Reference not found]';
-
+    
     // Replace all occurrences of the placeholder {{depId}}
     const placeholder = '{{' + depId + '}}';
     if (processedPrompt.includes(placeholder)) {
       const beforeReplace = processedPrompt;
       processedPrompt = processedPrompt.split(placeholder).join(replacementValue);
-
+      
       // Debug: Log replacement for cross-sheet references
       if (depId.includes('!')) {
         console.log(`✅ Cross-sheet reference replaced: ${placeholder} -> ${replacementValue.substring(0, 50)}...`);
       }
+    }
+  }
+
+  // For image-to-video models, automatically extract image URLs from referenced cells or current cell
+  const isImageToVideoModel = finalModel && (
+    finalModel.includes('img2vid') || 
+    finalModel.includes('image-to-video') || 
+    finalModel.includes('stable-video-diffusion-img2vid') ||
+    finalModel === 'fal-ai-stable-video-diffusion-img2vid' ||
+    (finalModel.includes('stable-video-diffusion') && finalModel.includes('img2vid'))
+  );
+  
+  if (isImageToVideoModel) {
+    try {
+      // Check if prompt already contains an image URL
+      const hasImageUrlInPrompt = /image[_\s]*url[:\s]+(https?:\/\/[^\s]+)/i.test(processedPrompt) || 
+                                   /(https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp))/i.test(processedPrompt);
+      
+      if (!hasImageUrlInPrompt) {
+        let imageUrl = null;
+        
+        // First, try to extract from referenced cells
+        if (deps.length > 0) {
+          console.log(`🔍 Image-to-video model detected. Checking ${deps.length} referenced cell(s) for image URLs...`);
+          try {
+            imageUrl = await extractImageUrlFromReferencedCells(deps);
+            if (imageUrl) {
+              console.log(`✅ Found image URL in referenced cells: ${imageUrl.substring(0, 80)}...`);
+            } else {
+              console.log(`⚠️ No image URLs found in referenced cells`);
+            }
+          } catch (extractError) {
+            console.error(`❌ Error extracting image URL from referenced cells:`, extractError);
+            // Continue without image URL - let the server handle the error
+          }
+        }
+        
+        // If no image found in referenced cells, check the current cell's own output/generations
+        if (!imageUrl && cell) {
+          console.log(`🔍 Checking current cell ${id} for image URLs...`);
+          
+          try {
+            // Check current cell's generations (most recent first)
+            if (cell.generations && cell.generations.length > 0) {
+              for (let i = cell.generations.length - 1; i >= 0; i--) {
+                const gen = cell.generations[i];
+                if (gen && gen.output && isImageUrl(gen.output)) {
+                  imageUrl = gen.output;
+                  console.log(`✅ Found image URL in current cell's generation ${i + 1}: ${imageUrl.substring(0, 80)}...`);
+                  break;
+                }
+              }
+            }
+            
+            // Check current cell's output if no image found in generations
+            if (!imageUrl && cell.output && isImageUrl(cell.output)) {
+              imageUrl = cell.output;
+              console.log(`✅ Found image URL in current cell's output: ${imageUrl.substring(0, 80)}...`);
+            }
+          } catch (cellCheckError) {
+            console.error(`❌ Error checking current cell for image URL:`, cellCheckError);
+            // Continue without image URL
+          }
+        }
+        
+        // If we found an image URL, format the prompt
+        if (imageUrl) {
+          processedPrompt = `image_url: ${imageUrl}\nprompt: ${processedPrompt}`;
+          console.log(`🖼️ Auto-formatted prompt for image-to-video with extracted image URL`);
+        } else {
+          console.warn(`⚠️ Image-to-video model requires an image URL, but none found in referenced cells or current cell. Prompt: "${processedPrompt.substring(0, 100)}..."`);
+          console.warn(`⚠️ Request will be sent anyway - server will return a helpful error message`);
+        }
+      } else {
+        console.log(`✅ Prompt already contains an image URL, skipping extraction`);
+      }
+    } catch (error) {
+      console.error(`❌ Error in image-to-video URL extraction:`, error);
+      console.warn(`⚠️ Continuing with original prompt - request will be sent anyway`);
+      // Don't block the request - let it proceed and the server will handle the error
     }
   }
 
@@ -3417,10 +3635,16 @@ async function runCell(id, visited = new Set()) {
       const selectedModel = availableModels.find(m => m.id === finalModel);
       const modelForApi = selectedModel ? (selectedModel.originalId || selectedModel.id) : finalModel;
 
+      // Log before making the request
+      console.log(`🚀 Preparing to send API request - Model: ${modelForApi}, Prompt length: ${processedPrompt.length}`);
+      console.log(`📝 Prompt preview: ${processedPrompt.substring(0, 200)}...`);
+
       // Try server API first, fallback to client-side AI
       let content;
       try {
-        const response = await fetch(`${getApiBaseUrl()}/api/llm`, {
+        const apiUrl = `${getApiBaseUrl()}/api/llm`;
+        console.log(`🌐 Sending request to: ${apiUrl}`);
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -390,8 +390,9 @@ async function fetchFalAIModels() {
         console.log('🔄 Fetching models from Fal.ai...');
         
         // Fal.ai doesn't have a models endpoint, so we'll use our predefined models
-        // Only include working image generation models (text models don't work on Fal.ai)
+        // Include both image and video generation models
         const falAIModels = [
+            // Image generation models
             {
                 id: 'fal-ai/flux/dev',
                 name: 'FLUX Dev',
@@ -405,14 +406,111 @@ async function fetchFalAIModels() {
                 description: 'Vector art and image generation model',
                 provider: 'fal-ai',
                 type: 'image'
+            },
+            // Video generation models
+            {
+                id: 'fal-ai/stable-video-diffusion',
+                name: 'Stable Video Diffusion',
+                description: 'Text-to-video and image-to-video generation',
+                provider: 'fal-ai',
+                type: 'video'
+            },
+            {
+                id: 'fal-ai/stable-video-diffusion/img2vid',
+                name: 'Stable Video Diffusion (Image-to-Video)',
+                description: 'Convert images to videos',
+                provider: 'fal-ai',
+                type: 'video'
+            },
+            {
+                id: 'fal-ai/lightning-svd',
+                name: 'Lightning SVD',
+                description: 'Fast video generation model',
+                provider: 'fal-ai',
+                type: 'video'
             }
         ];
         
-        console.log(`✅ Fetched ${falAIModels.length} models from Fal.ai`);
+        console.log(`✅ Fetched ${falAIModels.length} models from Fal.ai (${falAIModels.filter(m => m.type === 'image').length} image, ${falAIModels.filter(m => m.type === 'video').length} video)`);
         return falAIModels;
     } catch (error) {
         console.error('❌ Error fetching Fal.ai models:', error);
         throw error;
+    }
+}
+
+/**
+ * Repopulate models from Fal.ai API and save to Firestore
+ * Sets all models to active status (unlike sync which preserves status)
+ */
+async function repopulateFalAIModels() {
+    try {
+        if (!falAIConfig.apiKey) {
+            showError('Fal.ai API key not configured');
+            return;
+        }
+
+        if (!confirm('This will repopulate all Fal.ai models (including video models) and set them to active. Continue?')) {
+            return;
+        }
+
+        showSuccess('🔄 Repopulating models from Fal.ai...');
+        
+        const falAIModels = await fetchFalAIModels();
+        
+        // Save each model to Firestore
+        let savedCount = 0;
+        let updatedCount = 0;
+        
+        for (const model of falAIModels) {
+            try {
+                // Sanitize model ID for Firestore document ID
+                const sanitizedId = model.id.replace(/\//g, '-').replace(/[^a-zA-Z0-9-]/g, '-');
+                
+                // Check if model already exists
+                const existingDoc = await adminDb.collection('models').doc(sanitizedId).get();
+                
+                const modelData = {
+                    id: sanitizedId,
+                    originalId: model.id,
+                    name: model.name,
+                    description: model.description || `Model: ${model.name}`,
+                    provider: model.provider || 'fal-ai',
+                    type: model.type || categorizeModelType(model.name, model.description),
+                    contextLength: null,
+                    pricing: {
+                        prompt: null,
+                        completion: null
+                    },
+                    source: 'fal-ai',
+                    isActive: true, // Set to active when repopulating
+                    status: 'active', // Set to active when repopulating
+                    createdAt: existingDoc.exists ? existingDoc.data().createdAt : new Date(),
+                    updatedAt: new Date()
+                };
+                
+                if (existingDoc.exists) {
+                    await adminDb.collection('models').doc(sanitizedId).update(modelData);
+                    updatedCount++;
+                } else {
+                    await adminDb.collection('models').doc(sanitizedId).set(modelData);
+                    savedCount++;
+                }
+            } catch (error) {
+                console.error(`❌ Error saving model ${model.id}:`, error);
+            }
+        }
+        
+        const imageCount = falAIModels.filter(m => m.type === 'image').length;
+        const videoCount = falAIModels.filter(m => m.type === 'video').length;
+        showSuccess(`✅ Repopulated ${falAIModels.length} models from Fal.ai (${savedCount} new, ${updatedCount} updated, ${imageCount} image, ${videoCount} video) - All set to active`);
+        
+        // Reload models list
+        await loadModels();
+        
+    } catch (error) {
+        console.error('❌ Error repopulating Fal.ai models:', error);
+        showError('Failed to repopulate models: ' + error.message);
     }
 }
 
@@ -515,8 +613,12 @@ async function syncFalAIModels() {
         const syncedModels = [];
         
         for (const model of falAIModels) {
-            // Sanitize model ID for Firestore (replace / with -)
-            const sanitizedId = model.id.replace(/\//g, '-');
+            // Sanitize model ID for Firestore (replace / with - and special chars)
+            const sanitizedId = model.id.replace(/\//g, '-').replace(/[^a-zA-Z0-9-]/g, '-');
+            
+            // Check if model already exists to preserve active status
+            const existingDoc = await adminDb.collection('models').doc(sanitizedId).get();
+            const existingData = existingDoc.exists ? existingDoc.data() : null;
             
             // Transform Fal.ai model data to our format
             const modelData = {
@@ -532,17 +634,15 @@ async function syncFalAIModels() {
                     completion: null
                 },
                 source: 'fal-ai',
-                status: 'inactive', // Default to inactive, admin can enable
-                isActive: false, // Keep for backward compatibility
-                createdAt: new Date(),
+                // Preserve existing status if model exists, otherwise default to inactive
+                status: existingData?.status || 'inactive',
+                isActive: existingData?.isActive !== undefined ? existingData.isActive : false,
+                createdAt: existingData?.createdAt || new Date(),
                 updatedAt: new Date()
             };
             
-            // Check if model already exists (using sanitized ID)
-            const existingModel = adminData.models.find(m => m.id === sanitizedId);
-            
-            if (existingModel) {
-                // Update existing model with Fal.ai data
+            if (existingDoc.exists) {
+                // Update existing model with Fal.ai data, preserving active status
                 await adminDb.collection('models').doc(sanitizedId).update({
                     name: modelData.name,
                     description: modelData.description,
@@ -551,21 +651,23 @@ async function syncFalAIModels() {
                     contextLength: modelData.contextLength,
                     pricing: modelData.pricing,
                     source: modelData.source,
-                    status: modelData.status,
                     originalId: modelData.originalId,
                     updatedAt: modelData.updatedAt
+                    // Note: status and isActive are preserved, not updated
                 });
-                console.log(`✅ Updated model: ${model.name} (ID: ${sanitizedId})`);
+                console.log(`✅ Updated model: ${model.name} (ID: ${sanitizedId}, Type: ${modelData.type})`);
             } else {
                 // Create new model
                 await adminDb.collection('models').doc(sanitizedId).set(modelData);
-                console.log(`✅ Added new model: ${model.name} (ID: ${sanitizedId})`);
+                console.log(`✅ Added new model: ${model.name} (ID: ${sanitizedId}, Type: ${modelData.type})`);
             }
             
             syncedModels.push(modelData);
         }
         
-        showSuccess(`Successfully synced ${syncedModels.length} models from Fal.ai`);
+        const imageCount = syncedModels.filter(m => m.type === 'image').length;
+        const videoCount = syncedModels.filter(m => m.type === 'video').length;
+        showSuccess(`Successfully synced ${syncedModels.length} models from Fal.ai (${imageCount} image, ${videoCount} video)`);
         
         // Reload models to show updated data
         await loadModels();

@@ -1,47 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GPT Excel Grid</title>
-  
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap"
+    rel="stylesheet">
 
   <style>
     /* --- CSS VARIABLES & RESET --- */
     :root {
       --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --font-display: 'Playfair Display', serif; /* Medium-style headers */
-      
+      --font-display: 'Playfair Display', serif;
+      /* Medium-style headers */
+
       --color-bg: #ffffff;
       --color-bg-secondary: #f9f9f9;
-      --color-text-main: #242424; /* Softer than pure black */
+      --color-text-main: #242424;
+      /* Softer than pure black */
       --color-text-muted: #6b6b6b;
-      
+
       --color-border: #e0e0e0;
       --color-border-hover: #b0b0b0;
-      
-      --color-accent: #1a8917; /* Medium-style Green for primary actions */
+
+      --color-accent: #1a8917;
+      /* Medium-style Green for primary actions */
       --color-accent-hover: #156d12;
-      --color-focus: #2196f3; /* Google-style Blue for grid selection */
-      
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-      --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-      
+      --color-focus: #2196f3;
+      /* Google-style Blue for grid selection */
+
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
       --radius-sm: 4px;
       --radius-md: 8px;
       --radius-pill: 100px;
     }
 
-    * { box-sizing: border-box; outline: none; }
+    * {
+      box-sizing: border-box;
+      outline: none;
+    }
 
     body {
       font-family: var(--font-ui);
       margin: 0;
-      padding: 0 0 40px 0; /* Space for bottom sheet tabs */
+      padding: 0 0 40px 0;
+      /* Space for bottom sheet tabs */
       background-color: var(--color-bg);
       color: var(--color-text-main);
       height: 100vh;
@@ -75,7 +86,8 @@
       min-width: 200px;
     }
 
-    .project-title:hover, .project-title:focus {
+    .project-title:hover,
+    .project-title:focus {
       background: var(--color-bg-secondary);
       border-color: var(--color-border);
     }
@@ -86,10 +98,15 @@
       opacity: 0.6;
     }
 
-    .title-actions { display: flex; gap: 8px; }
+    .title-actions {
+      display: flex;
+      gap: 8px;
+    }
 
     /* Clean Icon Buttons */
-    .title-edit-btn, .title-save-btn, .title-cancel-btn {
+    .title-edit-btn,
+    .title-save-btn,
+    .title-cancel-btn {
       background: transparent;
       border: none;
       color: var(--color-text-muted);
@@ -99,9 +116,19 @@
       font-size: 16px;
       transition: all 0.2s;
     }
-    .title-edit-btn:hover { background: var(--color-bg-secondary); color: var(--color-text-main); }
-    .title-save-btn { color: var(--color-accent); }
-    .title-cancel-btn { color: #d93025; }
+
+    .title-edit-btn:hover {
+      background: var(--color-bg-secondary);
+      color: var(--color-text-main);
+    }
+
+    .title-save-btn {
+      color: var(--color-accent);
+    }
+
+    .title-cancel-btn {
+      color: #d93025;
+    }
 
     /* --- TOOLBAR / CONTROLS (Google Sheets Style) --- */
     .controls {
@@ -117,7 +144,8 @@
     }
 
     /* Input & Select Styling */
-    .controls select, .controls input {
+    .controls select,
+    .controls input {
       padding: 6px 12px;
       border: 1px solid var(--color-border);
       border-radius: var(--radius-sm);
@@ -128,9 +156,14 @@
       font-family: var(--font-ui);
     }
 
-    .controls select:hover, .controls input:hover { border-color: var(--color-border-hover); }
-    .controls select:focus, .controls input:focus { 
-      border-color: var(--color-focus); 
+    .controls select:hover,
+    .controls input:hover {
+      border-color: var(--color-border-hover);
+    }
+
+    .controls select:focus,
+    .controls input:focus {
+      border-color: var(--color-focus);
       box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
     }
 
@@ -149,7 +182,8 @@
       background-color: var(--color-bg);
       color: var(--color-text-main);
       border: 1px solid var(--color-border);
-      border-radius: var(--radius-pill); /* Medium style pills */
+      border-radius: var(--radius-pill);
+      /* Medium style pills */
       cursor: pointer;
       font-size: 13px;
       font-weight: 500;
@@ -169,6 +203,7 @@
       border-color: transparent;
       box-shadow: 0 2px 4px rgba(26, 137, 23, 0.2);
     }
+
     .controls button[onclick="runAll()"]:hover {
       background-color: var(--color-accent-hover);
       box-shadow: 0 4px 8px rgba(26, 137, 23, 0.3);
@@ -185,7 +220,7 @@
     .user-menu {
       position: relative;
     }
-    
+
     .user-button {
       background: transparent !important;
       border: 1px solid var(--color-border) !important;
@@ -198,8 +233,11 @@
       align-items: center;
       gap: 6px;
     }
-    .user-button:hover { background: var(--color-bg-secondary) !important; }
-    
+
+    .user-button:hover {
+      background: var(--color-bg-secondary) !important;
+    }
+
     .user-arrow {
       font-size: 10px;
       opacity: 0.7;
@@ -219,6 +257,7 @@
       min-width: 200px;
       margin-top: 4px;
     }
+
     .user-dropdown a {
       padding: 8px 16px !important;
       font-size: 13px;
@@ -228,20 +267,22 @@
       color: var(--color-text-main);
       cursor: pointer;
     }
-    .user-dropdown a:hover { 
-      background-color: var(--color-bg-secondary) !important; 
+
+    .user-dropdown a:hover {
+      background-color: var(--color-bg-secondary) !important;
     }
 
     /* --- GRID CONTAINER (Now Cards Container) --- */
     .grid-container {
       flex: 1;
       overflow: auto;
-      background-color: #f5f5f5; /* Light gray background for cards */
+      background-color: #f5f5f5;
+      /* Light gray background for cards */
       margin: 0;
       border: none;
       position: relative;
     }
-    
+
     /* Cards Container */
     #cards-container {
       position: relative;
@@ -249,8 +290,14 @@
       height: 100%;
       min-height: 100vh;
       padding: 40px;
+      background-color: #fafafa;
+      background-image:
+        linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 0;
     }
-    
+
     /* Connection Lines SVG */
     #connection-lines {
       position: absolute;
@@ -261,17 +308,17 @@
       pointer-events: none;
       z-index: 1;
     }
-    
+
     #connection-lines line {
       stroke: #1967d2;
       stroke-width: 2;
       marker-end: url(#arrowhead);
     }
-    
+
     #connection-lines defs marker {
       fill: #1967d2;
     }
-    
+
     /* Card Styles */
     .card {
       position: absolute;
@@ -280,23 +327,23 @@
       background: white;
       border: 2px solid #dadce0;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       cursor: move;
       transition: box-shadow 0.2s, border-color 0.2s;
       z-index: 10;
       overflow: visible;
     }
-    
+
     .card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       border-color: #b0b0b0;
     }
-    
+
     .card.selected {
       border-color: #1967d2;
       box-shadow: 0 4px 16px rgba(25, 103, 210, 0.2);
     }
-    
+
     .card-header {
       padding: 8px 12px;
       border-bottom: 1px solid #e8eaed;
@@ -310,17 +357,42 @@
       color: #5f6368;
       cursor: move;
     }
-    
+
+    .card-header-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .card-header .card-id {
       font-family: monospace;
     }
-    
+
+    .card-model-indicator {
+      font-size: 14px;
+      color: #ea8600;
+      cursor: help;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.6;
+      }
+    }
+
     .card-header-actions {
       display: flex;
       gap: 4px;
       align-items: center;
     }
-    
+
     .card-modal-btn,
     .card-disconnect-btn,
     .card-delete-btn {
@@ -334,42 +406,42 @@
       transition: all 0.2s;
       line-height: 1;
     }
-    
+
     .card-modal-btn:hover,
     .card-disconnect-btn:hover {
       background: #f8f9fa;
       border-color: #b0b0b0;
       color: #202124;
     }
-    
+
     .card-delete-btn:hover {
       background: #fee;
       border-color: #fcc;
       color: #c33;
     }
-    
+
     .card-modal-btn:active,
     .card-disconnect-btn:active {
       background: #e8eaed;
     }
-    
+
     .card-delete-btn:active {
       background: #fcc;
     }
-    
+
     /* Disconnect menu */
     .disconnect-menu {
       position: absolute;
       background: white;
       border: 1px solid #dadce0;
       border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       z-index: 2000;
       min-width: 200px;
       max-height: 300px;
       overflow-y: auto;
     }
-    
+
     .disconnect-menu-item {
       padding: 8px 12px;
       cursor: pointer;
@@ -379,24 +451,24 @@
       justify-content: space-between;
       font-size: 12px;
     }
-    
+
     .disconnect-menu-item:hover {
       background: #f8f9fa;
     }
-    
+
     .disconnect-menu-item:last-child {
       border-bottom: none;
     }
-    
+
     .disconnect-menu-item .disconnect-icon {
       color: #dc3545;
       margin-left: 8px;
     }
-    
+
     .card-content {
       padding: 12px;
     }
-    
+
     .card textarea {
       width: 100%;
       min-height: 60px;
@@ -410,11 +482,11 @@
       padding: 0;
       margin: 0;
     }
-    
+
     .card textarea:focus {
       outline: none;
     }
-    
+
     .card-controls {
       position: absolute;
       top: 100%;
@@ -424,18 +496,18 @@
       background: white;
       border: 1px solid #dadce0;
       border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       display: none;
       z-index: 1000;
       width: 280px;
       max-width: 280px;
       overflow: hidden;
     }
-    
+
     .card.focused .card-controls {
       display: block;
     }
-    
+
     /* Connection Ports */
     .card-port {
       position: absolute;
@@ -451,19 +523,19 @@
       opacity: 0.4;
       visibility: visible;
     }
-    
+
     .card-port.input {
       left: -6px;
       top: 50%;
       transform: translateY(-50%);
     }
-    
+
     .card-port.output {
       right: -6px;
       top: 50%;
       transform: translateY(-50%);
     }
-    
+
     /* Show ports prominently when card is focused/selected */
     .card.focused .card-port,
     .card.selected .card-port {
@@ -473,38 +545,39 @@
       box-shadow: 0 0 8px rgba(25, 103, 210, 0.6);
       visibility: visible !important;
     }
-    
+
     .card-port:hover {
       background: #0d47a1;
       transform: translateY(-50%) scale(1.2);
       opacity: 1;
     }
-    
+
     .card-port.dragging {
       background: #0d47a1;
       transform: translateY(-50%) scale(1.5);
       box-shadow: 0 0 10px rgba(25, 103, 210, 0.5);
     }
-    
+
     .card-port.can-connect {
       background: #4caf50;
       transform: translateY(-50%) scale(1.3);
     }
-    
+
     .card-port.connected {
       background: #1967d2;
     }
-    
+
     /* Connection line being drawn */
     .connection-preview {
       stroke: #1967d2;
       stroke-width: 2;
-      stroke-dasharray: 5,5;
+      stroke-dasharray: 5, 5;
       pointer-events: none;
     }
 
     table {
-      border-collapse: separate; /* Google Sheets uses separate borders */
+      border-collapse: separate;
+      /* Google Sheets uses separate borders */
       border-spacing: 0;
       background: white;
       table-layout: fixed;
@@ -536,7 +609,7 @@
       min-width: 50px;
       width: 50px;
     }
-    
+
     /* Column Headers (A, B, C...) */
     th.column-header {
       border-bottom: 1px solid #dadce0;
@@ -544,7 +617,7 @@
     }
 
     /* Header hover state */
-    th:hover { 
+    th:hover {
       background-color: #e8eaed;
     }
 
@@ -572,7 +645,8 @@
       padding: 0;
       vertical-align: top;
       position: relative;
-      cursor: cell; /* Google Sheets cursor */
+      cursor: cell;
+      /* Google Sheets cursor */
     }
 
     /* Cell hover state */
@@ -583,7 +657,8 @@
     /* --- CELL CONTENT --- */
     .cell-container {
       height: 100%;
-      min-height: 21px; /* Google Sheets default row height */
+      min-height: 21px;
+      /* Google Sheets default row height */
       display: flex;
       flex-direction: column;
       position: relative;
@@ -606,12 +681,14 @@
       line-height: 1.3;
       color: var(--color-text-main);
       border: none;
-      padding: 2px 6px; /* Google Sheets padding */
+      padding: 2px 6px;
+      /* Google Sheets padding */
       background: transparent;
       cursor: text;
       overflow: hidden;
     }
-    textarea:focus { 
+
+    textarea:focus {
       outline: none;
     }
 
@@ -639,7 +716,7 @@
       z-index: 1;
       box-sizing: border-box;
     }
-    
+
     /* Ensure cell controls appear above selection border */
     td.cell-selected .cell-controls {
       z-index: 101;
@@ -649,24 +726,28 @@
     .cell-container.has-prompt::before {
       content: '';
       position: absolute;
-      top: 2px; right: 2px;
-      width: 4px; height: 4px;
+      top: 2px;
+      right: 2px;
+      width: 4px;
+      height: 4px;
       background-color: var(--color-text-muted);
       border-radius: 50%;
       opacity: 0.4;
       z-index: 2;
     }
-    
+
     .cell-container.has-output::after {
       content: '';
       position: absolute;
-      bottom: 2px; right: 2px;
-      width: 4px; height: 4px;
+      bottom: 2px;
+      right: 2px;
+      width: 4px;
+      height: 4px;
       background-color: var(--color-accent);
       border-radius: 50%;
       z-index: 2;
     }
-    
+
     /* Hide indicators when cell is selected */
     td.cell-selected .cell-container.has-prompt::before,
     td.cell-selected .cell-container.has-output::after {
@@ -676,31 +757,35 @@
     /* Expand Button - Google Sheets Style */
     .expand-btn {
       position: absolute;
-      top: 2px; right: 2px;
-      width: 18px; height: 18px;
-      background: rgba(255,255,255,0.95);
+      top: 2px;
+      right: 2px;
+      width: 18px;
+      height: 18px;
+      background: rgba(255, 255, 255, 0.95);
       color: var(--color-text-muted);
       border: 1px solid #dadce0;
       border-radius: 2px;
       font-size: 10px;
-      display: flex; 
-      align-items: center; 
+      display: flex;
+      align-items: center;
       justify-content: center;
       opacity: 0;
       transition: all 0.15s;
       z-index: 10;
       cursor: pointer;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
+
     .cell-container:hover .expand-btn,
-    td.cell-selected .expand-btn { 
-      opacity: 1; 
+    td.cell-selected .expand-btn {
+      opacity: 1;
     }
-    .expand-btn:hover { 
-      background: white; 
-      color: #1967d2; 
-      border-color: #1967d2; 
-      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+
+    .expand-btn:hover {
+      background: white;
+      color: #1967d2;
+      border-color: #1967d2;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
     }
 
     /* Cell Controls - Complete Redesign (Google Sheets Style) */
@@ -711,7 +796,7 @@
       background: white;
       border: 1px solid #dadce0;
       border-top: 2px solid #1967d2;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
       z-index: 1000;
       display: none;
       padding: 0;
@@ -720,33 +805,35 @@
       animation: slideDown 0.15s ease-out;
       pointer-events: auto;
     }
-    
+
     /* Position dropdown right after the last visible element (textarea or output) */
     .cell-container .cell-controls {
       top: 100%;
-      margin-top: -1px; /* Overlap td border-bottom */
+      margin-top: -1px;
+      /* Overlap td border-bottom */
     }
-    
-    
+
+
     /* Ensure dropdown doesn't go off screen */
     td:last-child .cell-controls {
       right: 0;
       left: auto;
       min-width: 320px;
     }
-    
+
     @keyframes slideDown {
       from {
         opacity: 0;
         transform: translateY(-8px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
       }
     }
-    
-    .cell-container.focused .cell-controls { 
+
+    .cell-container.focused .cell-controls {
       display: block;
     }
 
@@ -802,7 +889,7 @@
       position: relative;
       width: 100%;
     }
-    
+
     /* Model Button - Custom Dropdown */
     .cell-model-button {
       width: 100%;
@@ -820,30 +907,32 @@
       transition: all 0.15s;
       text-align: left;
     }
+
     .cell-model-button:hover {
       border-color: #bdc1c6;
       background: #f8f9fa;
     }
+
     .cell-model-button:focus {
       outline: none;
       border-color: #1967d2;
       box-shadow: 0 0 0 2px rgba(25, 103, 210, 0.1);
     }
-    
+
     .model-button-text {
       flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    
+
     .model-button-arrow {
       color: #5f6368;
       font-size: 10px;
       margin-left: 8px;
       flex-shrink: 0;
     }
-    
+
     /* Model Dropdown Menu */
     .cell-model-dropdown {
       position: absolute;
@@ -853,13 +942,13 @@
       background: white;
       border: 1px solid #dadce0;
       border-radius: 4px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       max-height: 200px;
       overflow-y: auto;
       z-index: 1002;
       margin-top: 4px;
     }
-    
+
     .cell-model-option {
       padding: 6px 10px;
       font-size: 11px;
@@ -868,12 +957,15 @@
       transition: background 0.15s;
       border-bottom: 1px solid #f1f3f4;
     }
+
     .cell-model-option:last-child {
       border-bottom: none;
     }
+
     .cell-model-option:hover {
       background: #f8f9fa;
     }
+
     .cell-model-option.selected {
       background: #e8f0fe;
       color: #1967d2;
@@ -899,10 +991,12 @@
       text-align: center;
       transition: all 0.15s;
     }
+
     .cell-temp-input:hover {
       border-color: #bdc1c6;
       background: #f8f9fa;
     }
+
     .cell-temp-input:focus {
       outline: none;
       border-color: #1967d2;
@@ -918,6 +1012,7 @@
       -webkit-appearance: none;
       appearance: none;
     }
+
     .cell-temp-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
@@ -926,8 +1021,9 @@
       border-radius: 50%;
       background: #1967d2;
       cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
+
     .cell-temp-slider::-moz-range-thumb {
       width: 14px;
       height: 14px;
@@ -935,7 +1031,7 @@
       background: #1967d2;
       cursor: pointer;
       border: none;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
     /* Right Column - Actions */
@@ -960,6 +1056,7 @@
       font-size: 11px;
       color: #5f6368;
     }
+
     .cell-auto-run-toggle:hover {
       background: transparent;
     }
@@ -973,6 +1070,7 @@
       transition: background 0.15s;
       flex-shrink: 0;
     }
+
     .cell-auto-run-switch::after {
       content: '';
       position: absolute;
@@ -983,8 +1081,9 @@
       background: white;
       border-radius: 50%;
       transition: transform 0.15s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
+
     .cell-auto-run-checkbox {
       position: absolute;
       opacity: 0;
@@ -992,20 +1091,22 @@
       height: 0;
       pointer-events: none;
     }
-    
+
     /* Switch state based on checkbox */
     .cell-auto-run-toggle:has(.cell-auto-run-checkbox:checked) .cell-auto-run-switch {
       background: var(--color-accent);
     }
+
     .cell-auto-run-toggle:has(.cell-auto-run-checkbox:checked) .cell-auto-run-switch::after {
       transform: translateX(14px);
     }
-    
+
     /* Fallback for browsers without :has() support */
-    .cell-auto-run-checkbox:checked + .cell-auto-run-switch {
+    .cell-auto-run-checkbox:checked+.cell-auto-run-switch {
       background: var(--color-accent);
     }
-    .cell-auto-run-checkbox:checked + .cell-auto-run-switch::after {
+
+    .cell-auto-run-checkbox:checked+.cell-auto-run-switch::after {
       transform: translateX(14px);
     }
 
@@ -1033,15 +1134,18 @@
       white-space: nowrap;
       flex: 1;
     }
+
     .cell-run-btn:hover {
       background: #1557b0 !important;
       box-shadow: 0 2px 6px rgba(25, 103, 210, 0.4);
       transform: translateY(-1px);
     }
+
     .cell-run-btn:active {
       transform: translateY(0);
       box-shadow: 0 1px 2px rgba(25, 103, 210, 0.3);
     }
+
     .cell-run-btn::before {
       content: '▶';
       font-size: 10px;
@@ -1089,13 +1193,65 @@
       align-items: center;
       gap: 8px;
       position: relative;
+      width: 100%;
+      min-width: 120px;
     }
-    
+
     .sheet-name {
       flex: 1;
       min-width: 0;
+      user-select: none;
+      pointer-events: auto;
+      cursor: pointer;
     }
-    
+
+    .sheet-move-btn {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      font-size: 10px;
+      padding: 0;
+      transition: all 0.2s;
+      border-radius: 3px;
+    }
+
+    .sheet-move-btn:hover:not(:disabled) {
+      background: #e8eaed;
+      color: var(--color-text-main);
+    }
+
+    .sheet-move-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .sheet-edit-btn {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0;
+      transition: all 0.2s;
+      border-radius: 3px;
+    }
+
+    .sheet-edit-btn:hover {
+      background: #e8eaed;
+      color: var(--color-text-main);
+    }
+
     .sheet-close {
       width: 18px;
       height: 18px;
@@ -1109,7 +1265,7 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-    
+
     .sheet-close:hover {
       background: #e8eaed;
       color: var(--color-text-main);
@@ -1123,14 +1279,31 @@
     .sheet-tab.active {
       color: var(--color-accent);
       border-bottom: 2px solid var(--color-accent);
-      background: transparent;
     }
-    
-    .sheet-tab.active .sheet-name { color: var(--color-accent); }
+
+    .sheet-name-input {
+      border: 1px solid var(--color-accent) !important;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 13px;
+      font-weight: 500;
+      background: white;
+      color: var(--color-text-main);
+      outline: none;
+      min-width: 80px;
+      max-width: 200px;
+    }
+
+    .sheet-tab.active .sheet-name {
+      color: var(--color-accent);
+    }
 
     .add-sheet-btn {
-      width: 32px; height: 32px;
-      display: flex; align-items: center; justify-content: center;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       border-radius: 50%;
       margin-left: 8px;
       margin-bottom: 4px;
@@ -1139,7 +1312,11 @@
       font-size: 20px;
       border: none;
     }
-    .add-sheet-btn:hover { background: #e8eaed; color: var(--color-text-main); }
+
+    .add-sheet-btn:hover {
+      background: #e8eaed;
+      color: var(--color-text-main);
+    }
 
     /* --- MODALS (Modern & Clean) --- */
     /* --- MODAL (Modern Google Sheets Style) --- */
@@ -1153,17 +1330,23 @@
       animation: fadeIn 0.2s ease-out;
       overflow-y: auto;
     }
-    
+
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
     }
-    
+
     @keyframes slideUp {
       from {
         opacity: 0;
         transform: translateY(20px) scale(0.95);
       }
+
       to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -1224,10 +1407,12 @@
       background: transparent;
       border: none;
     }
+
     .close:hover {
       background: #f1f3f4;
       color: #202124;
     }
+
     .close:active {
       background: #e8eaed;
     }
@@ -1241,7 +1426,7 @@
     .modal-section {
       margin-bottom: 24px;
     }
-    
+
     .modal-section:last-child {
       margin-bottom: 0;
     }
@@ -1270,15 +1455,17 @@
       transition: all 0.15s;
       line-height: 1.5;
     }
+
     .modal-section textarea:focus {
       outline: none;
       border-color: #1967d2;
       box-shadow: 0 0 0 2px rgba(25, 103, 210, 0.1);
     }
+
     .modal-section textarea::placeholder {
       color: #9aa0a6;
     }
-    
+
     .modal-section select {
       width: 100%;
       padding: 10px 12px;
@@ -1291,6 +1478,7 @@
       cursor: pointer;
       transition: all 0.15s;
     }
+
     .modal-section select:focus {
       outline: none;
       border-color: #1967d2;
@@ -1304,13 +1492,13 @@
       border-radius: 4px;
       background: #f8f9fa;
       font-size: 14px;
-      line-height: 1.6;
+      /* line-height: 1.6; */
       color: #202124;
-      white-space: pre-wrap;
+      /* white-space: pre-wrap; */
       word-wrap: break-word;
       position: relative;
     }
-    
+
     .copy-button {
       display: inline-flex;
       align-items: center;
@@ -1324,14 +1512,17 @@
       cursor: pointer;
       transition: all 0.15s;
     }
+
     .copy-button:hover {
       background: #f8f9fa;
       border-color: #bdc1c6;
       color: #202124;
     }
+
     .copy-button:active {
       background: #e8eaed;
     }
+
     .copy-button.copied {
       background: #e8f5e9;
       border-color: var(--color-accent);
@@ -1360,13 +1551,15 @@
       cursor: pointer;
       transition: all 0.15s;
     }
+
     .cancel-button:hover {
       background: #f8f9fa;
       border-color: #bdc1c6;
       color: #202124;
     }
 
-    .save-button, .run-button {
+    .save-button,
+    .run-button {
       background: #1967d2;
       color: white;
       border: none;
@@ -1378,45 +1571,66 @@
       transition: all 0.15s;
       box-shadow: 0 1px 3px rgba(25, 103, 210, 0.3);
     }
-    .save-button:hover, .run-button:hover {
+
+    .save-button:hover,
+    .run-button:hover {
       background: #1557b0;
       box-shadow: 0 2px 6px rgba(25, 103, 210, 0.4);
     }
-    .save-button:active, .run-button:active {
+
+    .save-button:active,
+    .run-button:active {
       background: #0f4a8c;
       box-shadow: 0 1px 2px rgba(25, 103, 210, 0.3);
     }
-    
+
     .run-button {
       background: var(--color-accent);
       box-shadow: 0 1px 3px rgba(26, 137, 23, 0.3);
     }
+
     .run-button:hover {
       background: var(--color-accent-hover);
       box-shadow: 0 2px 6px rgba(26, 137, 23, 0.4);
     }
+
     .run-button:active {
       background: #156d12;
       box-shadow: 0 1px 2px rgba(26, 137, 23, 0.3);
     }
-    
+
 
     /* Scrollbars (Subtle) */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #d1d1d1; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #b0b0b0; }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #d1d1d1;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #b0b0b0;
+    }
 
     /* Helper classes - Google Sheets Style */
-    .row-highlighted td { 
-      background-color: #f8f9fa !important; 
+    .row-highlighted td {
+      background-color: #f8f9fa !important;
     }
-    .column-highlighted td { 
-      background-color: #f8f9fa !important; 
+
+    .column-highlighted td {
+      background-color: #f8f9fa !important;
     }
-    .header-highlighted { 
-      color: #1967d2 !important; 
-      background-color: #e8f0fe !important; 
+
+    .header-highlighted {
+      color: #1967d2 !important;
+      background-color: #e8f0fe !important;
       font-weight: 600 !important;
     }
 
@@ -1424,23 +1638,27 @@
     tr.row-selected td {
       background-color: #f8f9fa;
     }
+
     td.column-selected {
       background-color: #f8f9fa;
     }
-
   </style>
 </head>
+
 <body>
   <div class="project-header">
     <div style="display:flex; align-items:center; width:100%;">
-      <h1 class="project-title" id="project-title" contenteditable="true" data-placeholder="Untitled Spreadsheet">GPT Excel Grid</h1>
+      <h1 class="project-title" id="project-title" contenteditable="true" data-placeholder="Untitled Spreadsheet">GPT
+        Excel Grid</h1>
       <div class="title-actions">
         <button class="title-edit-btn" id="title-edit-btn" onclick="toggleTitleEdit()" title="Edit Title">✎</button>
-        <button class="title-save-btn" id="title-save-btn" onclick="saveTitle()" style="display: none;" title="Save">✓</button>
-        <button class="title-cancel-btn" id="title-cancel-btn" onclick="cancelTitleEdit()" style="display: none;" title="Cancel">✕</button>
+        <button class="title-save-btn" id="title-save-btn" onclick="saveTitle()" style="display: none;"
+          title="Save">✓</button>
+        <button class="title-cancel-btn" id="title-cancel-btn" onclick="cancelTitleEdit()" style="display: none;"
+          title="Cancel">✕</button>
       </div>
     </div>
-    
+
     <div class="user-controls">
       <div class="user-menu" id="userMenu">
         <button class="user-button" onclick="toggleUserMenu()">
@@ -1466,7 +1684,7 @@
         <option value="loading">Loading models...</option>
       </select>
     </div>
-    
+
     <div style="display:flex; align-items:center; gap:8px;">
       <label for="temp-input">Creativity:</label>
       <input id="temp-input" type="number" min="0" max="1" step="0.1" value="0.5" style="width: 60px;" />
@@ -1476,26 +1694,28 @@
 
     <button onclick="createNewCard()" title="Create a new card">+ New Card</button>
     <button onclick="runAll()" title="Run all cards with prompts">▶ Run All</button>
-    
+
     <button onclick="showHelp()" style="margin-left: auto;">Help</button>
     <span id="card-status" style="font-size: 11px; color: var(--color-text-muted); margin-left: 12px;">Ready</span>
   </div>
 
   <div class="grid-container">
-    <div id="firebase-loading" style="display: flex; align-items: center; justify-content: center; height: 200px; font-size: 14px; color: var(--color-text-muted);">
+    <div id="firebase-loading"
+      style="display: flex; align-items: center; justify-content: center; height: 200px; font-size: 14px; color: var(--color-text-muted);">
       <div style="text-align: center;">
         <div style="margin-bottom: 10px; font-size: 24px;">●</div>
         <div>Loading Workspace...</div>
       </div>
     </div>
     <div id="cards-container" style="display: none; position: relative; width: 100%; height: 100%; overflow: auto;">
-      <svg id="connection-lines" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></svg>
+      <svg id="connection-lines"
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></svg>
       <div id="cards" style="position: relative; z-index: 2;"></div>
     </div>
   </div>
 
   <div id="sheet-tabs" class="sheet-tabs">
-    </div>
+  </div>
 
   <div id="cellModal" class="modal">
     <div class="modal-content">
@@ -1516,14 +1736,19 @@
         </div>
         <div class="modal-section">
           <label for="modalCellPrompt">Template (Optional)</label>
-          <textarea id="modalCellPrompt" placeholder="e.g. 'Summarize this: {input}'" style="min-height: 60px;"></textarea>
+          <textarea id="modalCellPrompt" placeholder="e.g. 'Summarize this: {input}'"
+            style="min-height: 60px;"></textarea>
         </div>
         <div class="modal-section">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
             <label for="modalOutput" style="margin: 0;">Result</label>
-            <button type="button" id="copyResultBtn" class="copy-button" onclick="copyModalResult()" title="Copy to clipboard" style="display: none;">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px;">
-                <path d="M5.5 3.5H3.5C2.67 3.5 2 4.17 2 5v7.5c0 .83.67 1.5 1.5 1.5H9c.83 0 1.5-.67 1.5-1.5V11M5.5 3.5c0 .83.67 1.5 1.5 1.5H11c.83 0 1.5-.67 1.5-1.5V5c0-.83-.67-1.5-1.5-1.5H7c-.83 0-1.5.67-1.5 1.5v-1.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <button type="button" id="copyResultBtn" class="copy-button" onclick="copyModalResult()"
+              title="Copy to clipboard" style="display: none;">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="margin-right: 4px;">
+                <path
+                  d="M5.5 3.5H3.5C2.67 3.5 2 4.17 2 5v7.5c0 .83.67 1.5 1.5 1.5H9c.83 0 1.5-.67 1.5-1.5V11M5.5 3.5c0 .83.67 1.5 1.5 1.5H11c.83 0 1.5-.67 1.5-1.5V5c0-.83-.67-1.5-1.5-1.5H7c-.83 0-1.5.67-1.5 1.5v-1.5z"
+                  stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
               Copy
             </button>
@@ -1539,14 +1764,54 @@
     </div>
   </div>
 
-  <div id="helpModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>Help</h3><span class="close" onclick="closeHelp()">&times;</span></div><div class="modal-body"><div class="help-section"><h4>Shortcuts</h4><ul><li>Ctrl+Enter: Run Cell</li></ul></div></div></div></div>
-  <div id="profileModal" class="modal" style="display: none;"><div class="modal-content"><div class="modal-header"><h2>Profile</h2><button class="close" onclick="closeProfile()">&times;</button></div><div class="modal-body"><div id="profileEmail"></div></div></div></div>
-  <div id="settingsModal" class="modal" style="display: none;"><div class="modal-content"><div class="modal-header"><h2>Settings</h2><button class="close" onclick="closeSettings()">&times;</button></div><div class="modal-body">Settings content</div></div></div>
-  <div id="usageModal" class="modal" style="display: none;"><div class="modal-content"><div class="modal-header"><h2>Usage</h2><button class="close" onclick="closeUsage()">&times;</button></div><div class="modal-body">Usage content</div></div></div>
-  
-  <div id="imageModal" class="image-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:3000;">
-    <span class="image-modal-close" onclick="closeImageModal()" style="color:white; position:absolute; top:20px; right:30px; font-size:40px; cursor:pointer;">&times;</span>
-    <img id="fullSizeImage" style="max-height:90vh; max-width:90vw; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);">
+  <div id="helpModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Help</h3><span class="close" onclick="closeHelp()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="help-section">
+          <h4>Shortcuts</h4>
+          <ul>
+            <li>Ctrl+Enter: Run Cell</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="profileModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Profile</h2><button class="close" onclick="closeProfile()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="profileEmail"></div>
+      </div>
+    </div>
+  </div>
+  <div id="settingsModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Settings</h2><button class="close" onclick="closeSettings()">&times;</button>
+      </div>
+      <div class="modal-body">Settings content</div>
+    </div>
+  </div>
+  <div id="usageModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Usage</h2><button class="close" onclick="closeUsage()">&times;</button>
+      </div>
+      <div class="modal-body">Usage content</div>
+    </div>
+  </div>
+
+  <div id="imageModal" class="image-modal"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:3000;">
+    <span class="image-modal-close" onclick="closeImageModal()"
+      style="color:white; position:absolute; top:20px; right:30px; font-size:40px; cursor:pointer;">&times;</span>
+    <img id="fullSizeImage"
+      style="max-height:90vh; max-width:90vw; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);">
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -1554,22 +1819,22 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   <script src="client-ai.js"></script>
-  
+
   <script>
     // Close model dropdowns when clicking outside
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
       if (!event.target.closest('.cell-model-select-wrapper')) {
         document.querySelectorAll('.cell-model-dropdown').forEach(dd => {
           dd.style.display = 'none';
         });
       }
     });
-    
+
     // Copy modal result to clipboard
     function copyModalResult() {
       const modalOutput = document.getElementById('modalOutput');
       if (!modalOutput) return;
-      
+
       // Get text content, handling both plain text and HTML
       let textToCopy = '';
       if (modalOutput.querySelector('img')) {
@@ -1579,11 +1844,11 @@
         // Get plain text content
         textToCopy = modalOutput.textContent.trim();
       }
-      
+
       if (!textToCopy) {
         return;
       }
-      
+
       // Copy to clipboard
       navigator.clipboard.writeText(textToCopy).then(() => {
         // Show feedback
@@ -1602,7 +1867,7 @@
         alert('Failed to copy to clipboard');
       });
     }
-    
+
     // Title logic re-implementation for the new HTML structure
     let originalTitle = '';
     let isEditingTitle = false;
@@ -1617,11 +1882,11 @@
         originalTitle = titleElement.textContent;
         titleElement.focus();
         // Visual cue handled by CSS focus state
-        
+
         editBtn.style.display = 'none';
         saveBtn.style.display = 'block';
         cancelBtn.style.display = 'block';
-        
+
         isEditingTitle = true;
       }
     }
@@ -1630,7 +1895,7 @@
       const titleElement = document.getElementById('project-title');
       const newTitle = titleElement.textContent.trim();
       if (newTitle && newTitle !== originalTitle) {
-        if(typeof saveTitleToFirestore === 'function') saveTitleToFirestore(newTitle);
+        if (typeof saveTitleToFirestore === 'function') saveTitleToFirestore(newTitle);
       }
       resetTitleUI();
     }
@@ -1646,23 +1911,23 @@
       const editBtn = document.getElementById('title-edit-btn');
       const saveBtn = document.getElementById('title-save-btn');
       const cancelBtn = document.getElementById('title-cancel-btn');
-      
+
       titleElement.blur();
       editBtn.style.display = 'block';
       saveBtn.style.display = 'none';
       cancelBtn.style.display = 'none';
       isEditingTitle = false;
     }
-    
+
     // Formatting Controls Initialization (Stub)
     function initializeFormattingControls() {
-        // Logic from original script
+      // Logic from original script
     }
   </script>
-  
+
   <script src="script.js"></script>
   <script src="https://gpt-cells-app-production.up.railway.app/firebase-config-static.js"></script>
-  
+
   <script>
     // Firebase Ready Check
     (function checkFirebaseReady() {
@@ -1679,4 +1944,5 @@
     })();
   </script>
 </body>
+
 </html>

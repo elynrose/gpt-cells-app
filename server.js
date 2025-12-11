@@ -346,9 +346,13 @@ const MODEL_PROVIDERS = {
     baseUrl: 'https://fal.run',
     apiKey: process.env.FAL_AI_API_KEY || '',
     models: [
-      // Working image generation models only
+      // Image generation models
       { id: 'fal-ai/flux/dev', name: 'FLUX Dev', description: 'High-quality image generation', type: 'image' },
-      { id: 'fal-ai/recraft-v3', name: 'Recraft V3', description: 'Vector art and image generation', type: 'image' }
+      { id: 'fal-ai/recraft-v3', name: 'Recraft V3', description: 'Vector art and image generation', type: 'image' },
+      // Video generation models
+      { id: 'fal-ai/stable-video-diffusion', name: 'Stable Video Diffusion', description: 'Text-to-video and image-to-video generation', type: 'video' },
+      { id: 'fal-ai/stable-video-diffusion/img2vid', name: 'Stable Video Diffusion (Image-to-Video)', description: 'Convert images to videos', type: 'video' },
+      { id: 'fal-ai/lightning-svd', name: 'Lightning SVD', description: 'Fast video generation model', type: 'video' }
     ],
     endpoint: '/v1/chat/completions'
   },
@@ -609,8 +613,19 @@ async function getOriginalModelId(sanitizedId) {
           return 'fal-ai/flux/dev';
         } else if (modelName === 'recraft-v3') {
           return 'fal-ai/recraft-v3';
+        } else if (modelName === 'stable-video-diffusion') {
+          return 'fal-ai/stable-video-diffusion';
+        } else if (modelName === 'stable-video-diffusion-img2vid') {
+          return 'fal-ai/stable-video-diffusion/img2vid';
+        } else if (modelName === 'lightning-svd') {
+          return 'fal-ai/lightning-svd';
         } else {
-          return `fal-ai/${modelName}`;
+          // Handle nested paths (e.g., stable-video-diffusion-img2vid -> stable-video-diffusion/img2vid)
+          const parts = modelName.split('-');
+          if (modelName.includes('stable-video-diffusion') && modelName.includes('img2vid')) {
+            return 'fal-ai/stable-video-diffusion/img2vid';
+          }
+          return `fal-ai/${modelName.replace(/-/g, '/')}`;
         }
       } else {
         // Generic pattern: assume first part is provider
@@ -622,6 +637,86 @@ async function getOriginalModelId(sanitizedId) {
   } catch (error) {
     return sanitizedId;
   }
+}
+
+/**
+ * Poll Fal.ai video job status until completion
+ * 
+ * @param {string} jobId - Video job ID from Fal.ai
+ * @param {string} apiKey - Fal.ai API key
+ * @param {string} modelId - Original model ID
+ * @param {number} maxAttempts - Maximum polling attempts (default: 60)
+ * @param {number} attempt - Current attempt number
+ */
+async function pollFalAIVideoJob(jobId, apiKey, modelId, maxAttempts = 60, attempt = 0) {
+  if (attempt >= maxAttempts) {
+    throw new Error('Fal.ai video generation timed out. Job may still be processing.');
+  }
+  
+  return new Promise((resolve, reject) => {
+    // Fal.ai uses status endpoint: /v1/fal/queue/{jobId}/status
+    // Or we can check the job directly
+    const options = {
+      hostname: 'fal.run',
+      port: 443,
+      path: `/v1/fal/queue/${jobId}/status`,
+      method: 'GET',
+      headers: {
+        'Authorization': `Key ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    };
+    
+    const req = https.request(options, (res) => {
+      let responseData = '';
+      res.on('data', (chunk) => {
+        responseData += chunk;
+      });
+      res.on('end', () => {
+        if (res.statusCode >= 400) {
+          // Try alternative endpoint or return job ID for manual checking
+          if (res.statusCode === 404) {
+            // Job might be completed, try getting result directly
+            setTimeout(() => {
+              pollFalAIVideoJob(jobId, apiKey, modelId, maxAttempts, attempt + 1);
+            }, 2000);
+            return;
+          }
+          reject(new Error(`Fal.ai API Error ${res.statusCode}: ${responseData.substring(0, 200)}`));
+          return;
+        }
+        
+        try {
+          const parsed = JSON.parse(responseData);
+          const status = parsed.status || parsed.state;
+          
+          if (status === 'COMPLETED' || status === 'completed' || status === 'SUCCESS') {
+            const videoUrl = parsed.video?.url || parsed.video_url || parsed.data?.[0]?.video_url || parsed.data?.[0]?.url || parsed.url;
+            if (videoUrl) {
+              resolve(videoUrl);
+            } else {
+              reject(new Error('Video generation completed but no video URL found in response'));
+            }
+          } else if (status === 'FAILED' || status === 'failed' || status === 'ERROR') {
+            reject(new Error(`Fal.ai video generation failed: ${parsed.error?.message || parsed.message || 'Unknown error'}`));
+          } else {
+            // Still processing, poll again after 2 seconds
+            setTimeout(() => {
+              pollFalAIVideoJob(jobId, apiKey, modelId, maxAttempts, attempt + 1).then(resolve).catch(reject);
+            }, 2000);
+          }
+        } catch (error) {
+          reject(new Error(`Invalid JSON response from Fal.ai: ${responseData.substring(0, 200)}`));
+        }
+      });
+    });
+    
+    req.on('error', (error) => {
+      reject(error);
+    });
+    
+    req.end();
+  });
 }
 
 /**
@@ -774,11 +869,95 @@ function getVideoContent(jobId, apiKey, resolve, reject) {
 async function callHybridAI(model, prompt, temperature = 0.7) {
   try {
     // Determine model type
-    const isImageModel = model.includes('flux') || model.includes('stable-diffusion') || model.includes('recraft') || model.includes('dall-e');
-    const isVideoModel = model.includes('sora') || model.includes('runway') || model.includes('pika') || model.includes('stable-video');
+    const isImageModel = model.includes('flux') || (model.includes('stable-diffusion') && !model.includes('video')) || model.includes('recraft') || model.includes('dall-e');
+    const isVideoModel = model.includes('sora') || model.includes('runway') || model.includes('pika') || model.includes('stable-video') || model.includes('lightning-svd');
+    const isFalAIVideoModel = model.includes('fal-ai') && (model.includes('stable-video') || model.includes('lightning-svd') || model.includes('img2vid'));
     const isTextModel = model.includes('llama') || model.includes('mistral') || model.includes('codellama') || model.includes('gpt') || model.includes('claude') || model.includes('gemini');
     
-    if (isVideoModel && model.includes('sora-2')) {
+    if (isFalAIVideoModel) {
+      // Video generation via Fal.ai
+      const falApiKey = process.env.FAL_AI_API_KEY;
+      if (!falApiKey) {
+        throw new Error('Fal.ai API key is required for video generation. Please configure FAL_AI_API_KEY in Railway.');
+      }
+      
+      // Convert sanitized model ID back to original format for Fal.ai
+      const originalModelId = await getOriginalModelId(model);
+      
+      // Fal.ai video models use different endpoints
+      // For image-to-video, we need to check if there's an image URL in the prompt
+      const isImageToVideo = model.includes('img2vid') || model.includes('image-to-video');
+      
+      let requestData;
+      if (isImageToVideo) {
+        // Extract image URL from prompt (check multiple formats)
+        // Format 1: "image_url: https://..."
+        // Format 2: "https://..." (just a URL)
+        // Format 3: Check if prompt contains a URL that looks like an image
+        let imageUrl = null;
+        let textPrompt = prompt;
+        
+        // Try format 1: explicit image_url: prefix
+        const imageUrlMatch1 = prompt.match(/image[_\s]*url[:\s]+(https?:\/\/[^\s]+)/i);
+        if (imageUrlMatch1) {
+          imageUrl = imageUrlMatch1[1];
+          textPrompt = prompt.replace(/image[_\s]*url[:\s]+https?:\/\/[^\s]+/gi, '').trim();
+        } else {
+          // Try format 2: check if prompt starts with or contains an image URL
+          const urlMatch = prompt.match(/(https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp))/i);
+          if (urlMatch) {
+            imageUrl = urlMatch[1];
+            textPrompt = prompt.replace(urlMatch[1], '').trim();
+          }
+        }
+        
+        if (!imageUrl) {
+          // If no image URL found, provide helpful error message
+          throw new Error('Image-to-video model requires an image URL. Please provide an image URL in one of these formats:\n1. "image_url: https://example.com/image.jpg prompt: your text"\n2. "https://example.com/image.jpg your text"\n\nOr use the text-to-video model (Stable Video Diffusion) instead of the image-to-video model.');
+        }
+        
+        requestData = {
+          image_url: imageUrl,
+          prompt: textPrompt || 'Generate video from this image'
+        };
+      } else {
+        // Text-to-video
+        requestData = {
+          prompt: prompt,
+          num_inference_steps: 25,
+          guidance_scale: 7.5
+        };
+      }
+      
+      try {
+        const response = await makeAPIRequest('fal-ai', `/${originalModelId}`, requestData, falApiKey);
+        
+        // Fal.ai video models return video URLs in different formats
+        // Some models return job-based responses that need polling
+        if (response.status === 'pending' || response.status === 'processing') {
+          // Handle async job-based video generation
+          const jobId = response.id || response.job_id;
+          if (jobId) {
+            // Poll for completion (similar to Sora 2)
+            return await pollFalAIVideoJob(jobId, falApiKey, originalModelId);
+          }
+        }
+        
+        // Direct video URL response
+        return response.video?.url || response.video_url || response.data?.[0]?.video_url || response.data?.[0]?.url || response.url || 'No video generated';
+      } catch (apiError) {
+        // Provide more helpful error messages
+        if (apiError.message.includes('404') || apiError.message.includes('not found')) {
+          throw new Error(`Fal.ai model "${originalModelId}" not found. Please check the model ID or use a different video model.`);
+        } else if (apiError.message.includes('401') || apiError.message.includes('unauthorized')) {
+          throw new Error('Fal.ai API key is invalid or expired. Please check your FAL_AI_API_KEY.');
+        } else if (apiError.message.includes('429') || apiError.message.includes('rate limit')) {
+          throw new Error('Fal.ai rate limit exceeded. Please try again later.');
+        }
+        throw apiError;
+      }
+      
+    } else if (isVideoModel && model.includes('sora-2')) {
       // Video generation via OpenAI Sora 2 API
       const openaiApiKey = process.env.OPENAI_API_KEY;
       if (!openaiApiKey) {
@@ -1339,10 +1518,32 @@ window.storage = storage;`;
         apiRequestInProgress = true;
         console.log(`🔒 Circuit breaker: API request started`);
         
-        const data = JSON.parse(body || '{}');
+        // Parse request body
+        let data;
+        try {
+          data = JSON.parse(body || '{}');
+        } catch (parseError) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.end(JSON.stringify({ error: 'Invalid JSON in request body', details: parseError.message }));
+          apiRequestInProgress = false;
+          return;
+        }
+        
         const prompt = data.prompt || '';
         const model = data.model || 'gpt-3.5-turbo';
         const temperature = data.temperature || 0.7;
+        
+        // Validate required fields
+        if (!prompt || prompt.trim() === '') {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.end(JSON.stringify({ error: 'Prompt is required' }));
+          apiRequestInProgress = false;
+          return;
+        }
         
         console.log(`🚀 API Request - Model: ${model}, Prompt: ${prompt.substring(0, 50)}...`);
         
@@ -1367,11 +1568,28 @@ window.storage = storage;`;
         console.log(`🔓 Circuit breaker: API request failed, resetting`);
         
         // Handle different types of errors gracefully
-        let errorMessage = 'An error occurred while processing your request';
+        let errorMessage = err.message || 'An error occurred while processing your request';
         let statusCode = 500;
         
-        if (err.message.includes('API key')) {
-          errorMessage = 'API configuration error. Please check your API keys.';
+        // Check for JSON parsing errors first
+        if (err instanceof SyntaxError && err.message.includes('JSON')) {
+          errorMessage = 'Invalid request format. Please check your request data.';
+          statusCode = 400;
+        } else if (err.message.includes('Image URL is required') || err.message.includes('image-to-video')) {
+          // Image-to-video model requires image URL
+          errorMessage = err.message; // Use the detailed error message we created
+          statusCode = 400;
+        } else if (err.message.includes('API key') || err.message.includes('API configuration')) {
+          // Provide more specific error message for API key issues
+          if (err.message.includes('Fal.ai')) {
+            errorMessage = 'Fal.ai API key is required. Please configure FAL_AI_API_KEY in your .env file or Railway environment variables.';
+          } else if (err.message.includes('OpenRouter')) {
+            errorMessage = 'OpenRouter API key is required. Please configure OPENROUTER_API_KEY in your .env file or Railway environment variables.';
+          } else if (err.message.includes('OpenAI')) {
+            errorMessage = 'OpenAI API key is required. Please configure OPENAI_API_KEY in your .env file or Railway environment variables.';
+          } else {
+            errorMessage = 'API configuration error. Please check your API keys in .env file or Railway environment variables.';
+          }
           statusCode = 400;
         } else if (err.message.includes('rate limit') || err.message.includes('429')) {
           errorMessage = 'Rate limit exceeded. Please try again later.';
@@ -1379,11 +1597,18 @@ window.storage = storage;`;
         } else if (err.message.includes('authentication') || err.message.includes('401')) {
           errorMessage = 'Authentication failed. Please check your API keys.';
           statusCode = 401;
+        } else if (err.message.includes('not found') || err.message.includes('404')) {
+          errorMessage = err.message; // Use the specific error message
+          statusCode = 404;
+        } else if (err.message.includes('timeout') || err.message.includes('timed out')) {
+          errorMessage = err.message;
+          statusCode = 408; // Request Timeout
         }
         
         res.statusCode = statusCode;
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: errorMessage }));
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.end(JSON.stringify({ error: errorMessage, details: process.env.NODE_ENV === 'development' ? err.message : undefined }));
       }
     });
     return;

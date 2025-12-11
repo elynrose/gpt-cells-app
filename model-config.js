@@ -105,6 +105,15 @@ const MODEL_CONFIG = {
     maxTokens: null,
     costPer1kTokens: 0.2
   },
+  'sora-2': {
+    name: 'Sora 2',
+    type: 'video',
+    provider: 'openai',
+    description: 'OpenAI Sora 2 - Advanced video generation with text-to-video and image-to-video capabilities',
+    maxTokens: null,
+    costPer1kTokens: 0.1, // $0.10 per second for standard resolutions
+    originalId: 'sora-2' // API model identifier
+  },
 
   // Audio Generation Models
   'tts-1': {

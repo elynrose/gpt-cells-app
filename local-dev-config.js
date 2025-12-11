@@ -76,6 +76,14 @@ async function getActiveModelsLocal() {
       type: 'image',
       provider: 'fal-ai',
       active: true
+    },
+    {
+      id: 'sora-2',
+      name: 'Sora 2',
+      type: 'video',
+      provider: 'openai',
+      description: 'OpenAI Sora 2 - Advanced video generation with text-to-video and image-to-video capabilities',
+      active: true
     }
   ];
 }
